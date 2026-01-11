@@ -1,0 +1,53 @@
+/* Desktop styles (900px and up) */
+
+.container {
+    padding: 32px;
+}
+
+.header {
+    margin-bottom: 32px;
+}
+
+.header h1 {
+    font-size: 2.25rem;
+}
+
+.candidate-textarea {
+    min-height: 300px;
+}
+
+.progress-section {
+    padding: 28px 32px;
+}
+
+.progress-step {
+    padding: 0;
+}
+
+.step-label {
+    font-size: 0.85rem;
+}
+
+.top-results {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.top-results .result-card:first-child {
+    grid-column: auto;
+}
+
+.result-card {
+    padding: 20px;
+}
+
+.candidate-text {
+    font-size: 1.1rem;
+}
+
+.all-results {
+    gap: 10px;
+}
+
+.result-item {
+    padding: 14px 16px;
+}

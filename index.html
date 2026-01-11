@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セマンティック候補ランカー</title>
+    <meta name="description" content="意味的な自然さで平文候補をランク付け">
+
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <link rel="icon" href="data:,">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net;
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob:;
+        connect-src 'self' blob: https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co;
+        worker-src 'self' blob:;
+        base-uri 'self';
+        form-action 'self';
+    ">
+
+    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="style/style-mobile.css">
+    <link rel="stylesheet" href="style/style-tablet.css" media="(min-width: 600px)">
+    <link rel="stylesheet" href="style/style-laptop.css" media="(min-width: 900px)">
+</head>
+<body>
+    <main class="container">
+        <header class="header">
+            <div class="header-buttons">
+                <button id="helpBtn" class="help-btn" aria-label="Help">?</button>
+                <button id="langToggle" class="lang-toggle" aria-label="Switch language">EN</button>
+            </div>
+            <h1 id="title">セマンティック候補ランカー</h1>
+            <p id="subtitle" class="subtitle">意味的な自然さで平文候補をランク付け</p>
+        </header>
+
+        <section class="input-section">
+            <label for="candidateInput" id="candidatesLabel" class="input-label">候補</label>
+            <textarea
+                id="candidateInput"
+                class="candidate-textarea"
+                placeholder="候補を空行で区切って入力してください。
+
+例:
+これは最初の候補です
+
+これは2番目の候補です
+
+これは3番目の候補です"
+                rows="10"
+            ></textarea>
+
+            <div class="controls">
+                <div class="preset-selector">
+                    <label for="presetSelect" id="presetLabel">プリセット</label>
+                    <select id="presetSelect" class="preset-dropdown">
+                        <option value="balanced" selected>バランス</option>
+                        <option value="naturalness">自然さ重視</option>
+                        <option value="reference">参照重視</option>
+                        <option value="strict">厳格</option>
+                        <option value="broad">広範囲</option>
+                    </select>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="runBtn" class="btn btn-primary">実行</button>
+                    <button id="cancelBtn" class="btn btn-secondary" hidden>キャンセル</button>
+                </div>
+            </div>
+        </section>
+
+        <div id="messages" class="messages" hidden></div>
+
+        <section id="progress" class="progress-section" hidden>
+            <div class="progress-steps">
+                <div class="progress-step" data-step="1">
+                    <span class="step-indicator"></span>
+                    <span class="step-label" data-i18n="progressStep1">モデル読み込み中</span>
+                </div>
+                <div class="progress-step" data-step="2">
+                    <span class="step-indicator"></span>
+                    <span class="step-label" data-i18n="progressStep2">候補を準備中</span>
+                </div>
+                <div class="progress-step" data-step="3">
+                    <span class="step-indicator"></span>
+                    <span class="step-label" data-i18n="progressStep3">参照を準備中</span>
+                </div>
+                <div class="progress-step" data-step="4">
+                    <span class="step-indicator"></span>
+                    <span class="step-label" data-i18n="progressStep4">類似度を計算中</span>
+                </div>
+                <div class="progress-step" data-step="5">
+                    <span class="step-indicator"></span>
+                    <span class="step-label" data-i18n="progressStep5">結果をランキング中</span>
+                </div>
+            </div>
+            <div id="slowWarning" class="slow-warning" hidden>
+                処理に時間がかかっています...
+            </div>
+        </section>
+
+        <section id="results" class="results-section" hidden>
+            <h2 id="topResultsTitle" class="results-title">トップ結果</h2>
+            <div id="topResults" class="top-results"></div>
+
+            <h2 id="allResultsTitle" class="results-title">すべての結果</h2>
+            <div id="allResults" class="all-results"></div>
+        </section>
+
+        <footer>
+            <div class="footer">
+                <span id="githubText">🔗 GitHubリポジトリはこちら（</span>
+                <a href="https://github.com/ipusiron/semantic-candidate-ranker" target="_blank" rel="noopener noreferrer" id="githubLink"> ipusiron/semantic-candidate-ranker </a>
+                <span>）</span>
+                <span id="offlineIndicator" class="offline-indicator" hidden>オフライン</span>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal" hidden>
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <button id="modalClose" class="modal-close" aria-label="Close">&times;</button>
+            <h2 id="helpTitle" class="modal-title">使い方</h2>
+            <div id="helpBody" class="modal-body">
+                <h3>概要</h3>
+                <p>このツールは、入力されたテキスト候補を意味的な自然さでランク付けします。機械学習モデルを使用して、各候補がどれだけ自然な文章かを評価します。</p>
+
+                <h3>使用方法</h3>
+                <ol>
+                    <li>テキストエリアに候補を入力（空行で区切る）</li>
+                    <li>プリセットを選択（オプション）</li>
+                    <li>「実行」ボタンをクリック</li>
+                    <li>結果を確認</li>
+                </ol>
+
+                <h3>プリセット</h3>
+                <ul>
+                    <li><strong>バランス</strong>: 自然さと参照類似度を均等に評価</li>
+                    <li><strong>自然さ重視</strong>: 全体的な自然さを重視</li>
+                    <li><strong>参照重視</strong>: 参照文との類似度を重視</li>
+                    <li><strong>厳格</strong>: より少ない参照文で厳密に評価</li>
+                    <li><strong>広範囲</strong>: より多くの参照文で幅広く評価</li>
+                </ul>
+
+                <h3>評価</h3>
+                <ul>
+                    <li><strong>優秀</strong>: 非常に自然な表現</li>
+                    <li><strong>良好</strong>: 自然で流暢</li>
+                    <li><strong>普通</strong>: やや自然</li>
+                    <li><strong>弱い</strong>: やや不自然</li>
+                    <li><strong>不良</strong>: 自然な文ではない可能性</li>
+                </ul>
+
+                <h3>制限事項</h3>
+                <ul>
+                    <li>最大200件の候補</li>
+                    <li>初回はモデルのダウンロードが必要（約23MB）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

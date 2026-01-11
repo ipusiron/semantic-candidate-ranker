@@ -1,0 +1,97 @@
+/* Tablet styles (600px and up) */
+
+.container {
+    padding: 20px;
+}
+
+.header h1 {
+    font-size: 2rem;
+}
+
+.subtitle {
+    font-size: 1rem;
+}
+
+.candidate-textarea {
+    min-height: 250px;
+}
+
+.controls {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.preset-selector {
+    width: auto;
+}
+
+.preset-dropdown {
+    max-width: 180px;
+}
+
+.action-buttons {
+    width: auto;
+}
+
+.btn {
+    flex: none;
+    min-height: auto;
+}
+
+.progress-section {
+    padding: 24px;
+}
+
+.progress-steps {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.progress-step {
+    flex-direction: column;
+    text-align: center;
+    flex: 1;
+}
+
+.step-label {
+    font-size: 0.8rem;
+}
+
+.top-results {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.top-results .result-card:first-child {
+    grid-column: 1 / -1;
+}
+
+.result-item {
+    flex-wrap: nowrap;
+}
+
+.result-content {
+    order: 0;
+    width: auto;
+    margin-top: 0;
+}
+
+.result-rank {
+    order: 0;
+}
+
+.confidence-badge {
+    order: 0;
+}
+
+.toggle-btn {
+    order: 0;
+    margin-left: 0;
+}
+
+.footer {
+    flex-direction: row;
+}

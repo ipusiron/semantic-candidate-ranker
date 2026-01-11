@@ -1,0 +1,107 @@
+/* Mobile-first styles (default, < 600px) */
+
+.container {
+    padding: 12px;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+}
+
+.subtitle {
+    font-size: 0.9rem;
+}
+
+.candidate-textarea {
+    min-height: 200px;
+    font-size: 16px; /* Prevents zoom on iOS */
+}
+
+.controls {
+    flex-direction: column;
+}
+
+.preset-selector {
+    width: 100%;
+}
+
+.preset-dropdown {
+    max-width: none;
+    flex: 1;
+}
+
+.action-buttons {
+    width: 100%;
+}
+
+.btn {
+    flex: 1;
+    padding: 14px 20px;
+    min-height: 48px; /* Touch-friendly */
+}
+
+.progress-steps {
+    gap: 8px;
+}
+
+.progress-step {
+    padding: 6px 0;
+}
+
+.step-indicator {
+    width: 20px;
+    height: 20px;
+}
+
+.step-label {
+    font-size: 0.9rem;
+}
+
+.top-results {
+    gap: 12px;
+}
+
+.result-card {
+    padding: 14px;
+}
+
+.candidate-text {
+    font-size: 1rem;
+}
+
+.score-info {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.result-item {
+    flex-wrap: wrap;
+    padding: 10px;
+}
+
+.result-content {
+    order: 2;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.result-rank {
+    order: 1;
+}
+
+.confidence-badge {
+    order: 1;
+}
+
+.toggle-btn {
+    order: 1;
+    margin-left: auto;
+}
+
+.footer {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    padding: 16px 0 8px 0;
+    text-align: center;
+}
