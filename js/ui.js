@@ -422,6 +422,29 @@ export function renderResults(results) {
 }
 
 /**
+ * Known metadata keys with specific styling
+ */
+const KNOWN_META_KEYS = ['shift', 'branch', 'mapping'];
+
+/**
+ * Build metadata labels HTML from meta object
+ * Supports any key=value metadata, with special styling for known keys
+ * @param {Object} meta - Metadata object with arbitrary keys
+ * @returns {string} HTML string of metadata labels
+ */
+function buildMetaLabels(meta) {
+    if (!meta || Object.keys(meta).length === 0) return '';
+
+    const labels = [];
+    for (const [key, value] of Object.entries(meta)) {
+        // Add specific class for known keys, generic class for others
+        const keyClass = KNOWN_META_KEYS.includes(key) ? `meta-${key}` : '';
+        labels.push(`<span class="meta-label ${keyClass}">${escapeHtml(key)}=${escapeHtml(value)}</span>`);
+    }
+    return labels.length > 0 ? `<div class="meta-labels">${labels.join('')}</div>` : '';
+}
+
+/**
  * Create HTML for a top result card
  * @param {Object} result
  * @returns {string}
@@ -430,17 +453,21 @@ function createTopResultCard(result) {
     const confidenceClass = `confidence-${result.confidence}`;
     const confidenceLabel = getConfidenceLabel(result.confidence);
     const evaluation = getEvaluationComment(result.score);
+    const metaLabels = buildMetaLabels(result.meta);
+    // Use rawText for copy (includes metadata), fallback to text
+    const copyText = result.rawText || result.text;
 
     return `
         <div class="result-card rank-${result.rank}">
             <div class="rank-badge">${result.rank}</div>
+            ${metaLabels}
             <div class="candidate-text">${escapeHtml(result.text)}</div>
             <div class="evaluation-comment ${evaluation.class}">${evaluation.text}</div>
             <div class="score-info">
                 <span class="score">${t('score')}: ${result.score.toFixed(3)}</span>
                 <span class="confidence-badge ${confidenceClass}">${confidenceLabel}</span>
             </div>
-            <button class="copy-btn" data-text="${escapeAttr(result.text)}">${t('copyButton')}</button>
+            <button class="copy-btn" data-text="${escapeAttr(copyText)}">${t('copyButton')}</button>
         </div>
     `;
 }
@@ -455,12 +482,16 @@ function createResultItem(result, maxScore) {
     const barWidth = Math.round((result.score / maxScore) * 100);
     const confidenceClass = `confidence-${result.confidence}`;
     const confidenceLabel = getConfidenceLabel(result.confidence);
+    const metaLabels = buildMetaLabels(result.meta);
+    // Use rawText for copy (includes metadata), fallback to text
+    const copyText = result.rawText || result.text;
 
     return `
         <div class="result-item">
             <div class="result-rank">${result.rank}</div>
             <div class="result-content">
-                <div class="result-preview" data-full-text="${escapeAttr(result.text)}">${escapeHtml(truncateText(result.text, 60))}</div>
+                ${metaLabels}
+                <div class="result-preview" data-full-text="${escapeAttr(result.text)}" data-copy-text="${escapeAttr(copyText)}">${escapeHtml(truncateText(result.text, 60))}</div>
                 <div class="score-bar">
                     <div class="score-fill" style="width: ${barWidth}%"></div>
                 </div>

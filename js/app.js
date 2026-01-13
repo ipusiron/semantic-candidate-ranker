@@ -62,8 +62,9 @@ async function handleRun() {
     const currentLang = getCurrentLang();
 
     // Parse and validate candidates
-    const candidates = parseCandidates(input);
-    const validation = validateCandidates(candidates, input);
+    // parseCandidates returns { meta, rawText, evalText } objects
+    const parsedCandidates = parseCandidates(input);
+    const validation = validateCandidates(parsedCandidates, input);
 
     if (!validation.valid) {
         showMessage(t('errorEmpty'), 'error');
@@ -126,17 +127,21 @@ async function handleRun() {
 
         // Stage 4: Compute similarities (embed candidates)
         updateProgress(4);
+        // Extract evalText for embedding (metadata excluded)
+        const evalTexts = parsedCandidates.map(c => c.evalText);
         const candidateEmbeddings = await embedTexts(
-            candidates,
+            evalTexts,
             signal,
             null
         );
 
         if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
-        // Combine candidates with embeddings
-        const candidatesWithEmbeddings = candidates.map((text, i) => ({
-            text,
+        // Combine candidates with embeddings (include meta and rawText for UI)
+        const candidatesWithEmbeddings = parsedCandidates.map((parsed, i) => ({
+            text: parsed.evalText,  // for scoring
+            meta: parsed.meta,      // for UI display
+            rawText: parsed.rawText, // for copy
             embedding: candidateEmbeddings[i]
         }));
 

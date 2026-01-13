@@ -104,15 +104,17 @@ export function scoreCandidate(candidateEmb, centroid, refEmbeddings, preset) {
 
 /**
  * Score all candidates and return sorted results
- * @param {Array<{text: string, embedding: number[]|Float32Array}>} candidates - Candidates with embeddings
+ * @param {Array<{text: string, embedding: number[]|Float32Array, meta?: Object, rawText?: string}>} candidates - Candidates with embeddings
  * @param {Float32Array} centroid - Reference centroid
  * @param {Array<number[]|Float32Array>} refEmbeddings - All reference embeddings
  * @param {Object} preset - Preset configuration
- * @returns {Array<{text: string, score: number, confidence: string, rank: number}>}
+ * @returns {Array<{text: string, score: number, confidence: string, rank: number, meta?: Object, rawText?: string}>}
  */
 export function rankCandidates(candidates, centroid, refEmbeddings, preset) {
     const scored = candidates.map(c => ({
         text: c.text,
+        meta: c.meta,       // Preserve metadata for UI display
+        rawText: c.rawText, // Preserve original block for copy
         score: scoreCandidate(c.embedding, centroid, refEmbeddings, preset),
         confidence: getConfidence(c.text)
     }));

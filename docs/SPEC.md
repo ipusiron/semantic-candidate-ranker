@@ -9,6 +9,79 @@ This tool does NOT decrypt or solve ciphers.
 - Candidates separated by blank lines
 - Line breaks inside a candidate are allowed
 
+## Metadata Exclusion
+
+Supports candidate blocks with metadata lines in generic `key=value` format.
+Compatible with exports from various upstream tools (Caesar Cipher Breaker, Substitution Mapping Mixer, etc.).
+
+### Recognized Metadata Lines
+A line is treated as metadata if:
+1. It appears at the **beginning of the block** (consecutive lines from the start)
+2. It matches the format (after trimming leading spaces):
+```
+<key>=<value>
+```
+Where:
+- `key`: one or more word characters (letters, digits, underscore)
+- `value`: everything after the first `=`
+
+Examples: `shift=13`, `branch=ABC`, `mapping=XYZ`, `score=0.95`, `algorithm=caesar`
+
+**Important**: Once a non-metadata line is encountered, all subsequent lines are treated as content (even if they match `key=value` format). This prevents false positives in plaintext containing `=` characters.
+
+### Exclusion Rule
+- Metadata lines are **excluded from semantic evaluation**
+- Only non-metadata lines are normalized and sent to embedding
+- This ensures rankings are based purely on plaintext content
+- Changing metadata values does not affect scores (same plaintext = same score)
+
+### Display and Copy Behavior
+- All metadata is displayed prominently in results
+- "Copy" action copies the **original block including metadata** for traceability
+- Scoring is based only on the evaluation text (metadata excluded)
+
+### Edge Cases
+- Blocks containing **only metadata** (no plaintext content) are discarded
+- Empty blocks are ignored
+- Blocks with zero metadata lines are processed normally
+
+### Example 1: Single Metadata
+Input block:
+```
+shift=13
+this is a secret message
+```
+
+Parsed as:
+- `meta`: `{ shift: "13" }`
+- `rawText`: `"shift=13\nthis is a secret message"`
+- `evalText`: `"this is a secret message"` (used for scoring)
+
+### Example 2: Multiple Metadata
+Input block:
+```
+branch=ABC
+mapping=QWERTYUIOPASDFGHJKLZXCVBNM
+score=0.85
+THIS IS A SECRET MESSAGE
+```
+
+Parsed as:
+- `meta`: `{ branch: "ABC", mapping: "QWERTYUIOPASDFGHJKLZXCVBNM", score: "0.85" }`
+- `rawText`: (original block)
+- `evalText`: `"this is a secret message"` (used for scoring)
+
+### Example 3: No Metadata
+Input block:
+```
+this is a plain candidate without metadata
+```
+
+Parsed as:
+- `meta`: `{}`
+- `rawText`: `"this is a plain candidate without metadata"`
+- `evalText`: `"this is a plain candidate without metadata"` (used for scoring)
+
 ## Normalization
 - Lowercase
 - Line breaks -> spaces
@@ -84,3 +157,11 @@ Based on score:
 - Content Security Policy (CSP)
 - HTML escaping for XSS prevention
 - No external data transmission after initial model download
+
+## Limitations
+
+### Model Sensitivity
+The embedding model (all-MiniLM-L6-v2) may produce similar scores for natural text and gibberish in some cases. Score differences can be small (e.g., 0.64 vs 0.65), so rankings should be interpreted as guidance rather than definitive answers.
+
+### Metadata Exclusion Trade-off
+Metadata lines are excluded from evaluation to ensure consistent scoring regardless of metadata values. However, this means the evaluation is based solely on plaintext content. In edge cases where score differences are marginal, results may differ from expectations.
