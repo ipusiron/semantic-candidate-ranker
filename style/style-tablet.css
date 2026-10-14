@@ -67,6 +67,32 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.evaluation-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.preset-comparison,
+.perturbation-preset-results {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.evaluation-group-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.perturbation-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.perturbation-text-field,
+.perturbation-controls > .btn {
+    grid-column: 1 / -1;
+}
+
+.perturbation-text-comparison {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .step-label {
     font-size: 0.8rem;
 }

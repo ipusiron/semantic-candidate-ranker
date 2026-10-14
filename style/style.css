@@ -245,6 +245,265 @@ a:focus-visible {
     text-align: left;
 }
 
+.tool-tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 24px;
+}
+
+.tool-tab {
+    min-height: 44px;
+    padding: 9px 18px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    background: var(--color-bg);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tool-tab:hover {
+    border-color: var(--color-primary);
+}
+
+.tool-tab.active {
+    color: #ffffff;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.tool-tab:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.card-surface {
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-surface > :first-child {
+    margin-top: 0;
+}
+
+.card-surface > :last-child {
+    margin-bottom: 0;
+}
+
+.evaluation-intro h2,
+.evaluation-results h2 {
+    font-size: 1.3rem;
+}
+
+.evaluation-intro .result-context-grid {
+    margin: 16px 0;
+}
+
+.evaluation-actions {
+    margin-top: 16px;
+}
+
+.evaluation-results {
+    margin-top: 20px;
+}
+
+.evaluation-summary,
+.preset-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.evaluation-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+}
+
+.evaluation-metric-label {
+    color: var(--color-text-secondary);
+    font-size: 0.82rem;
+}
+
+.evaluation-metric-value {
+    font-size: 1.15rem;
+    overflow-wrap: anywhere;
+}
+
+.evaluation-dataset-notice {
+    grid-column: 1 / -1;
+    margin: 4px 0 0;
+    padding: 12px;
+    color: #7c2d12;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: var(--radius-md);
+}
+
+.preset-comparison,
+.evaluation-group-list,
+.perturbation-preset-results {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+}
+
+.preset-result-card,
+.evaluation-group-card,
+.perturbation-preset-card,
+.perturbation-text-card {
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+}
+
+.preset-result-card h3,
+.evaluation-group-card h4,
+.perturbation-preset-card h4,
+.perturbation-text-card h4 {
+    margin: 0 0 10px;
+}
+
+.compact-definition-list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+}
+
+.compact-definition-list .definition-pair {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+
+.compact-definition-list dt {
+    color: var(--color-text-secondary);
+}
+
+.compact-definition-list dd {
+    margin: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.evaluation-group + .evaluation-group {
+    margin-top: 20px;
+}
+
+.evaluation-case {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+}
+
+.evaluation-case + .evaluation-case {
+    margin-top: 10px;
+}
+
+.evaluation-case > summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.evaluation-case > summary:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.35);
+    outline-offset: 2px;
+}
+
+.evaluation-case-body {
+    display: grid;
+    gap: 12px;
+    padding: 0 12px 12px;
+}
+
+.evaluation-candidate {
+    min-width: 0;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+}
+
+.evaluation-candidate h4 {
+    margin: 0 0 8px;
+}
+
+.evaluation-candidate-text {
+    margin: 0 0 8px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.evaluation-setting,
+.same-candidate-notice {
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.perturbation-controls {
+    display: grid;
+    gap: 14px;
+}
+
+.field-group {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.field-group label {
+    font-weight: 600;
+}
+
+.field-group select,
+.field-group textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    background: var(--color-bg);
+    font: inherit;
+}
+
+.field-group textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.perturbation-results {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+}
+
+.perturbation-text-comparison {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
 .input-section {
     margin-bottom: 24px;
 }

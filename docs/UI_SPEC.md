@@ -3,11 +3,12 @@
 ## Layout
 
 1. Header: help, language switch, title, subtitle, scope warning
-2. Input: English candidates, format hint, textarea
-3. Controls: comparison preset, compare/cancel buttons
-4. Status: errors, warnings, five processing stages
-5. Results: execution conditions, score limitation, top cards, remaining candidates
-6. Footer: GitHub link and browser-offline indicator
+2. Centered tab list: Compare candidates, Evaluation lab
+3. Compare panel: input, preset, processing status, execution conditions, top cards, and remaining candidates
+4. Evaluation panel: dataset identity, run/cancel, metrics, grouped results, case details, and perturbation comparison
+5. Footer: GitHub link and browser-offline indicator
+
+The tab list follows the ARIA tab pattern. Left/Right Arrow, Home, and End move and activate tabs. Only the active tab participates in sequential keyboard focus.
 
 ## Responsive Rules
 
@@ -18,6 +19,7 @@
 - Header controls occupy their own row and never overlap the title
 - Interactive controls provide a minimum 44px tap target
 - Long metadata and repository text wrap instead of widening the page
+- Evaluation summaries are one column on mobile and expand only where available width permits
 
 ## Input State
 
@@ -25,6 +27,8 @@
 - Compare starts processing; Cancel replaces Compare during processing
 - Input, preset, and language controls are disabled while processing
 - Input or preset changes hide stale results and messages
+
+The evaluation controls are independent of the comparison input. Starting either operation disables both tabs and other conflicting controls until completion or cancellation.
 
 ## Result State
 
@@ -47,6 +51,22 @@ The reference disclosure uses a native `details` element and is rendered lazily 
 
 Remaining results use a compact layout with the same values, expandable text, reference disclosure, and copy action. The remaining-results section is hidden when fewer than four candidates exist.
 
+## Evaluation State
+
+Before a run, the evaluation panel displays version `eval-en-18-v1`, its full fingerprint, 18 cases, 108 candidates, and the six-by-three-by-six composition.
+
+After a run it displays:
+
+- Balanced Top-1, Top-3, MRR, and median correct rank
+- the same four metrics for all five presets
+- Balanced results grouped by six cipher families and three authored length categories
+- 18 native `details` elements showing correct rank, correct candidate, top-ranked candidate when different, generation settings, and score gap
+- a reminder that the observations do not establish general performance
+
+The perturbation area selects one evaluation case and one of eight deterministic changes. Its editable textarea contains only the changed correct candidate. Results compare before and after rank, composite, A, B, and changed top-k references while keeping the other five candidates fixed.
+
+Completed evaluation results survive tab and language changes. A language change redraws labels without re-embedding candidates.
+
 ## Bilingual Behavior
 
 - All visible strings, dynamic values, button labels, document title, `html lang`, description, and ARIA labels switch together.
@@ -58,7 +78,7 @@ Remaining results use a compact layout with the same values, expandable text, re
 
 - Opens from the `?` button
 - Uses `role="dialog"`, `aria-modal="true"`, and a labelled heading
-- Explains what the tool compares, each metric, presets, network behavior, token limit, and judgement limits
+- Explains what the tool compares, each metric, presets, the evaluation lab, network behavior, token limit, and judgement limits
 - Escape, backdrop, and close button dismiss it
 - Focus moves to Close and returns to the invoking control
 
@@ -71,3 +91,4 @@ Remaining results use a compact layout with the same values, expandable text, re
 - Rank and length use text as well as color
 - Buttons are native keyboard-operable elements
 - Native reference disclosures work with keyboard and expose a 44px summary target
+- Tabs use `role="tab"`, `aria-selected`, `aria-controls`, and associated tab panels

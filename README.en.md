@@ -34,6 +34,14 @@ When the required files are not cached, the browser needs an internet connection
 >
 > *The input, computed result, and disclosed reference neighborhood remain available across interface languages.*
 
+> ![Japanese evaluation lab showing the fixed 18-case results](assets/screenshot-evaluation.png)
+>
+> *The Japanese evaluation lab compares five presets, six cipher families, three input lengths, and individual failure cases.*
+
+> ![English evaluation lab showing the fixed 18-case results](assets/screenshot-evaluation-en.png)
+>
+> *The computed evaluation remains available when the interface language changes.*
+
 ---
 
 ## ✨ What It Can and Cannot Do
@@ -46,6 +54,8 @@ When the required files are not cached, the browser needs an internet connection
 - Record a reference-set version and SHA-256 fingerprint with the result conditions
 - Display and copy metadata such as `shift=13` and `branch=B12` while excluding it from scoring
 - Count input length with the actual tokenizer and report candidates above 256 word pieces
+- Observe Top-1, Top-3, MRR, and correct ranks for five presets on 18 independent fixed cases
+- Change only the correct candidate and compare rank, A, B, and nearest-reference changes
 - Switch the complete interface between Japanese and English
 
 ### It cannot
@@ -54,6 +64,7 @@ When the required files are not cached, the browser needs an internet connection
 - Check grammar, spelling, or writing quality
 - Prove that a candidate is factual, intended, safe, or correctly decrypted
 - Turn the score into a probability or a calibrated quality grade
+- Treat results on the 18 built-in cases as general accuracy or proof of a best preset
 
 ---
 
@@ -67,6 +78,17 @@ When the required files are not cached, the browser needs an internet connection
 6. Review the leading candidates against the cipher method, key, and context.
 
 Changing the input or preset invalidates the displayed result. Changing the interface language redraws the same computed result without running the model again.
+
+### Evaluation lab
+
+1. Open the “Evaluation lab” tab and select “Evaluate the 18 built-in cases.”
+2. Inspect Top-1, Top-3, MRR, and the median correct rank for the Balanced preset.
+3. Compare five presets, six cipher families, and the short, medium, and long groups.
+4. Open a case to inspect a wrong candidate ranked above the correct one and compare A and B.
+5. In the perturbation section, select a case and change type, then edit the changed correct candidate if needed.
+6. Compare rank, composite, A, B, and nearest-reference changes before and after.
+
+Tab and language switches preserve the computed evaluation. The evaluation set remains separate from the references, and candidates are not replaced after observing the result.
 
 ---
 
@@ -164,11 +186,16 @@ A smaller k is not inherently “stricter,” and a larger k is not inherently �
 - Reference collection: 300 fixed English sentences stored in this repository
 - Reference-set version: `en-300-v1`
 - Reference-set SHA-256: `99438d5c1522c3c66cf5378ace2cc5382f632bdb95ef111fb83758a38a3a5e31`
+- Evaluation-set version: `eval-en-18-v1`
+- Evaluation-set SHA-256: `e763264a9b2d4c5ad5104f73cfbbb0e74e40c24e8e0546ee5ebab44d28756b3a`
+- Evaluation set: 6 ciphers × 3 lengths × 6 candidates each = 18 cases and 108 candidates
 - Input limit: 256 word pieces per candidate, including special tokens
 
 The upstream [all-MiniLM-L6-v2 model card](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) describes the model as a sentence and short-paragraph encoder and states that input beyond 256 word pieces is truncated by default. This tool explicitly pins the runtime tokenizer to that limit.
 
 The fingerprint is SHA-256 over the UTF-8 bytes of the 300 English sentences serialized as a JSON array in source order. A sentence or order change produces another fingerprint, but the value is not a third-party authenticity proof or signature.
+
+The evaluation cases deterministically encrypt known plaintexts with Caesar, Affine, Vigenère, Beaufort, Rail Fence, and columnar transposition, then decrypt with the correct setting and five wrong settings. Correct positions 1 through 6 each occur three times. Its fingerprint also covers source-ordered JSON and is not a signature or tamper proof.
 
 The UI records the model, runtime version, reference count, reference-set version and fingerprint, limit, and preset alongside each result. Input length is descriptive—not confidence—and is shown as short, medium, long, or over limit.
 
@@ -184,6 +211,9 @@ The UI records the model, runtime version, reference count, reference-set versio
 - Specialized terms, proper nouns, and styles absent from the references may be disadvantaged.
 - The disclosed neighbors explain B; they are not evidence of correctness, naturalness, or provenance.
 - A ranking should be read in the context of the supplied candidate set.
+- The evaluation lab contains only 18 cases and does not establish general performance or a statistical confidence interval.
+- Top-1 and related values are observations on the built-in set, not probabilities or guarantees for future input.
+- Differences between presets do not identify a generally best preset.
 
 Use the ranking to narrow hypotheses. Check the cipher method, key consistency, context, known plaintext, and other statistical evidence separately.
 
@@ -215,11 +245,13 @@ For sensitive candidates, verify that external resources are already available, 
 
 ### Uses specific to this tool
 
-- **Prioritize Caesar brute-force output:** Keep `shift=N` metadata and decide which candidates to read first. The included screenshot shows comparison scores of 0.662, 0.640, and 0.622 for three sample candidates.
+- **Prioritize Caesar brute-force output:** Keep `shift=N` metadata and decide which candidates to read first. The screenshot shows 0.662 for the leading candidate’s composite, 0.618 for A, and 0.706 for B.
 - **Compare substitution branches:** Preserve `branch=B12` and `mapping=...` for traceability while scoring only the plaintext.
 - **Compare different solver outputs:** Place candidates from multiple decoders in separate blocks, then check whether the centroid and nearest-reference presets change their order.
 - **Study reference-set dependence:** Switch between the top-3 and top-7 presets, inspect which sentences and cosine values contribute to B, and observe how k changes the composite score.
 - **Observe truncation:** Enter a candidate longer than 256 word pieces and compare its original length with the number actually used.
+- **Inspect the ranker’s own failures:** Open fixed cases where the correct candidate is not first and compare the wrong candidate’s A and B components.
+- **Study sensitivity to small edits:** Apply case, whitespace, typo, word-order, unrelated-sentence, and over-256-word-piece changes, then compare ranks and nearest references.
 
 ### General uses
 
@@ -237,13 +269,18 @@ semantic-candidate-ranker/
 ├── .github/workflows/test.yml # Node.js CI
 ├── assets/
 │   ├── screenshot.png         # Japanese interface
-│   └── screenshot-en.png      # English interface
-├── docs/                      # Algorithm, model, reference, and UI specifications
+│   ├── screenshot-en.png      # English interface
+│   ├── screenshot-evaluation.png    # Japanese evaluation lab
+│   └── screenshot-evaluation-en.png # English evaluation lab
+├── docs/                      # Algorithm, model, reference, evaluation, and UI specifications
 ├── js/
 │   ├── app.js                 # Five-stage pipeline controller
 │   ├── embedder.js            # Model loading, embedding, and token inspection
+│   ├── evaluation-cases.js    # Fixed 18-case set and fingerprint
+│   ├── evaluator.js           # Top-1, Top-3, MRR, and delta aggregation
 │   ├── i18n.js                # Japanese and English messages
 │   ├── normalizer.js          # Input parsing and normalization
+│   ├── perturbations.js       # Eight deterministic changes
 │   ├── reference-sentences.js # 300 fixed references
 │   ├── scorer.js              # DOM-independent comparison core
 │   └── ui.js                  # Safe DOM rendering

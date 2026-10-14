@@ -38,6 +38,13 @@
             <p id="scopeNote" class="scope-note">順位は候補どうしを比べるための補助です。文法の自然さ、復号の正しさ、正解確率は判定しません。</p>
         </header>
 
+        <nav class="tool-tabs" role="tablist" aria-label="ツールの表示">
+            <button id="compareTab" class="tool-tab active" type="button" role="tab" aria-selected="true" aria-controls="comparePanel">候補を比較</button>
+            <button id="evaluationTab" class="tool-tab" type="button" role="tab" aria-selected="false" aria-controls="evaluationPanel" tabindex="-1">評価ラボ</button>
+        </nav>
+
+        <section id="comparePanel" role="tabpanel" aria-labelledby="compareTab">
+
         <section class="input-section">
             <label for="candidateInput" id="candidatesLabel" class="input-label">英語の平文候補</label>
             <p id="inputHint" class="input-hint">1候補を1ブロックとして、空行で区切ります。先頭の key=value 行は表示用メタデータとして評価から除外します。</p>
@@ -114,6 +121,77 @@
             <section id="allResultsBlock">
                 <h2 id="allResultsTitle" class="results-title">4位以降の候補</h2>
                 <div id="allResults" class="all-results"></div>
+            </section>
+        </section>
+        </section>
+
+        <section id="evaluationPanel" role="tabpanel" aria-labelledby="evaluationTab" hidden>
+            <section class="evaluation-intro card-surface">
+                <h2 id="evaluationTitle">評価ラボ</h2>
+                <p id="evaluationDescription">独立した内蔵18ケースで順位を測り、正解文への小さな変更で結果がどう動くかを確認します。</p>
+                <p id="evaluationLimit" class="score-notice">ここでの値は、この固定データに対する観測結果です。一般的な正解率、信頼度、品質評価ではありません。</p>
+                <dl id="evaluationContext" class="result-context-grid"></dl>
+                <div class="action-buttons evaluation-actions">
+                    <button id="evaluationRunBtn" class="btn btn-primary" type="button">内蔵18ケースを評価する</button>
+                    <button id="evaluationCancelBtn" class="btn btn-secondary" type="button" hidden>キャンセル</button>
+                </div>
+            </section>
+
+            <div id="evaluationMessages" class="messages" role="status" aria-live="polite" hidden></div>
+
+            <section id="evaluationProgress" class="progress-section" hidden>
+                <div class="progress-steps">
+                    <div class="progress-step" data-step="1"><span class="step-indicator"></span><span class="step-label">モデルを読み込み中</span></div>
+                    <div class="progress-step" data-step="2"><span class="step-indicator"></span><span class="step-label">候補を準備中</span></div>
+                    <div class="progress-step" data-step="3"><span class="step-indicator"></span><span class="step-label">参照文を準備中</span></div>
+                    <div class="progress-step" data-step="4"><span class="step-indicator"></span><span class="step-label">意味類似度を計算中</span></div>
+                    <div class="progress-step" data-step="5"><span class="step-indicator"></span><span class="step-label">候補を順位付け中</span></div>
+                </div>
+                <div id="evaluationSlowWarning" class="slow-warning" hidden>モデル取得または計算に時間がかかっています。</div>
+            </section>
+
+            <section id="evaluationResults" class="evaluation-results" aria-live="polite" hidden>
+                <section class="card-surface">
+                    <h2 id="evaluationSummaryTitle">固定データでの結果</h2>
+                    <div id="evaluationSummary" class="evaluation-summary"></div>
+                </section>
+
+                <section class="card-surface">
+                    <h2 id="presetComparisonTitle">プリセット比較</h2>
+                    <p id="presetComparisonNote">数値が最も高いプリセットを一般的な最良設定とは判定しません。</p>
+                    <div id="presetComparison" class="preset-comparison"></div>
+                </section>
+
+                <section class="card-surface">
+                    <h2 id="groupResultsTitle">方式・入力長別</h2>
+                    <div id="groupResults" class="group-results"></div>
+                </section>
+
+                <section class="card-surface">
+                    <h2 id="caseResultsTitle">ケース別結果</h2>
+                    <div id="caseResults" class="case-results"></div>
+                </section>
+
+                <section class="card-surface perturbation-lab">
+                    <h2 id="perturbationTitle">摂動比較</h2>
+                    <p id="perturbationDescription">正解候補だけを変更し、残り5候補を固定したまま順位差を調べます。</p>
+                    <div class="perturbation-controls">
+                        <div class="field-group">
+                            <label id="evaluationCaseLabel" for="evaluationCaseSelect">評価ケース</label>
+                            <select id="evaluationCaseSelect"></select>
+                        </div>
+                        <div class="field-group">
+                            <label id="perturbationTypeLabel" for="perturbationTypeSelect">変更の種類</label>
+                            <select id="perturbationTypeSelect"></select>
+                        </div>
+                        <div class="field-group perturbation-text-field">
+                            <label id="perturbationTextLabel" for="perturbationInput">変更後の正解候補</label>
+                            <textarea id="perturbationInput" rows="6"></textarea>
+                        </div>
+                        <button id="perturbationRunBtn" class="btn btn-primary" type="button">変更前後を比較する</button>
+                    </div>
+                    <div id="perturbationResults" class="perturbation-results" aria-live="polite" hidden></div>
+                </section>
             </section>
         </section>
 
