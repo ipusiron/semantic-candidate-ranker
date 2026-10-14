@@ -1,0 +1,14 @@
+{
+  "name": "semantic-candidate-ranker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dependency-free tests for Semantic Candidate Ranker",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

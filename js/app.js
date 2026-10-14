@@ -5,15 +5,21 @@
 
 import { parseCandidates, validateCandidates } from './normalizer.js';
 import { PRESETS, rankCandidates } from './scorer.js';
-import { loadModel, embedTexts, getOrComputeReferenceEmbeddings, clearCache } from './embedder.js';
+import {
+    loadModel,
+    embedTexts,
+    getOrComputeReferenceEmbeddings,
+    inspectTokenUsage,
+    MODEL_ID,
+    MODEL_WORDPIECE_LIMIT,
+    TRANSFORMERS_VERSION
+} from './embedder.js';
 import { getReferenceSentences } from './reference-sentences.js';
-import { t, getCurrentLang } from './i18n.js';
 import {
     initUI,
     getInputValue,
     getSelectedPreset,
     setButtonHandlers,
-    setLanguageChangeCallback,
     showProcessing,
     showIdle,
     updateProgress,
@@ -38,16 +44,6 @@ const SLOW_THRESHOLD_MS = 20000;
 function init() {
     initUI();
     setButtonHandlers(handleRun, handleCancel);
-    setLanguageChangeCallback(handleLanguageChange);
-}
-
-/**
- * Handle language change
- * @param {string} newLang - New language code
- */
-function handleLanguageChange(newLang) {
-    // Clear reference embeddings cache when language changes
-    clearCache();
 }
 
 /**
@@ -57,35 +53,23 @@ async function handleRun() {
     if (state.isProcessing) return;
 
     const input = getInputValue();
-    const presetName = getSelectedPreset();
+    const requestedPresetName = getSelectedPreset();
+    const presetName = PRESETS[requestedPresetName] ? requestedPresetName : 'balanced';
     const preset = PRESETS[presetName];
-    const currentLang = getCurrentLang();
-
     // Parse and validate candidates
     // parseCandidates returns { meta, rawText, evalText } objects
     const parsedCandidates = parseCandidates(input);
     const validation = validateCandidates(parsedCandidates, input);
 
     if (!validation.valid) {
-        showMessage(t('errorEmpty'), 'error');
+        showMessage({ key: 'errorEmpty' }, 'error');
         return;
     }
 
-    // Show warnings if any
-    if (validation.warnings.length > 0) {
-        // Translate warnings
-        const translatedWarnings = validation.warnings.map(warning => {
-            if (warning.includes('candidates')) {
-                const count = warning.match(/\d+/)?.[0] || '200';
-                return t('errorTooMany', { count });
-            }
-            if (warning.includes('short')) {
-                return t('warningShort');
-            }
-            return warning;
-        });
-        showMessage(translatedWarnings.join(' '), 'warning');
-    }
+    const warningKeys = validation.warnings.map(warning => ({
+        key: warning.code,
+        params: warning.params || {}
+    }));
 
     // Start processing
     state.isProcessing = true;
@@ -114,6 +98,19 @@ async function handleRun() {
 
         if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
+        const evalTexts = parsedCandidates.map(candidate => candidate.evalText);
+        const tokenUsage = await inspectTokenUsage(evalTexts);
+        if (tokenUsage.every(item => item.tokenCount < 32)) {
+            warningKeys.push({ key: 'warningShort', params: {} });
+        }
+        const truncatedCount = tokenUsage.filter(item => item.truncated).length;
+        if (truncatedCount > 0) {
+            warningKeys.push({
+                key: 'warningTruncated',
+                params: { count: truncatedCount, limit: MODEL_WORDPIECE_LIMIT }
+            });
+        }
+
         // Stage 3: Prepare references (always English for plaintext ranking)
         updateProgress(3);
         const referenceSentences = getReferenceSentences('en');
@@ -127,8 +124,6 @@ async function handleRun() {
 
         // Stage 4: Compute similarities (embed candidates)
         updateProgress(4);
-        // Extract evalText for embedding (metadata excluded)
-        const evalTexts = parsedCandidates.map(c => c.evalText);
         const candidateEmbeddings = await embedTexts(
             evalTexts,
             signal,
@@ -142,7 +137,8 @@ async function handleRun() {
             text: parsed.evalText,  // for scoring
             meta: parsed.meta,      // for UI display
             rawText: parsed.rawText, // for copy
-            embedding: candidateEmbeddings[i]
+            embedding: candidateEmbeddings[i],
+            ...tokenUsage[i]
         }));
 
         // Stage 5: Rank results
@@ -150,7 +146,19 @@ async function handleRun() {
         const results = rankCandidates(candidatesWithEmbeddings, centroid, refEmbeddings, preset);
 
         // Display results
-        renderResults(results);
+        renderResults(results, {
+            modelId: MODEL_ID,
+            transformersVersion: TRANSFORMERS_VERSION,
+            tokenLimit: MODEL_WORDPIECE_LIMIT,
+            referenceCount: referenceSentences.length,
+            presetName,
+            topK: preset.k,
+            truncatedCount
+        });
+
+        if (warningKeys.length > 0) {
+            showMessage(warningKeys, 'warning');
+        }
 
     } catch (error) {
         handleError(error);
@@ -174,13 +182,14 @@ function handleCancel() {
  */
 function handleError(error) {
     console.error('Processing error:', error);
+    const message = String(error?.message || '').toLowerCase();
 
     if (error.name === 'AbortError') {
-        showMessage(t('infoCancelled'), 'info');
-    } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-        showMessage(t('errorNetwork'), 'error');
+        showMessage({ key: 'infoCancelled' }, 'info');
+    } else if (message.includes('network') || message.includes('fetch')) {
+        showMessage({ key: 'errorNetwork' }, 'error');
     } else {
-        showMessage(t('errorProcessing'), 'error');
+        showMessage({ key: 'errorProcessing' }, 'error');
     }
 }
 

@@ -1,243 +1,211 @@
 /**
- * Internationalization module
- * Supports Japanese (default) and English
+ * Internationalization module. Japanese is the default; English is complete.
  */
 
 const translations = {
     ja: {
-        // Header
         title: 'セマンティック候補ランカー',
-        subtitle: '意味的な自然さで平文候補をランク付け',
-
-        // Input section
-        candidatesLabel: '候補',
+        subtitle: '内蔵参照文との意味類似度で英語平文候補を比較',
+        scopeNote: '順位は候補どうしを比べるための補助です。文法の自然さ、復号の正しさ、正解確率は判定しません。',
+        candidatesLabel: '英語の平文候補',
+        inputHint: '1候補を1ブロックとして、空行で区切ります。先頭の key=value 行は表示用メタデータとして評価から除外します。',
         placeholder: '候補を空行で区切って入力してください。\n\n例:\nthis is the first candidate\n\nthis is the second candidate\n\nthis is the third candidate',
-
-        // Presets
-        presetLabel: 'プリセット',
-        presetBalanced: 'バランス',
-        presetNaturalness: '自然さ重視',
-        presetReference: '参照重視',
-        presetStrict: '厳格',
-        presetBroad: '広範囲',
-
-        // Buttons
-        runButton: '実行',
+        presetLabel: '比較プリセット',
+        presetBalanced: 'バランス（既定）',
+        presetCentroid: '参照重心寄り',
+        presetNeighbors: '近い参照例寄り',
+        presetTop3: '上位3参照',
+        presetTop7: '上位7参照',
+        runButton: '比較する',
         cancelButton: 'キャンセル',
-        copyButton: 'コピー',
-        copiedButton: 'コピー済み',
-        showButton: '表示',
-        hideButton: '非表示',
-
-        // Progress
-        progressStep1: 'モデル読み込み中',
+        copyButton: '元の候補をコピー',
+        copiedButton: 'コピーしました',
+        showButton: '全文を表示',
+        hideButton: '折りたたむ',
+        progressStep1: 'モデルを読み込み中',
         progressStep2: '候補を準備中',
-        progressStep3: '参照を準備中',
-        progressStep4: '類似度を計算中',
-        progressStep5: '結果をランキング中',
-        slowWarning: '処理に時間がかかっています...',
-
-        // Results
-        topResultsTitle: 'トップ結果',
-        allResultsTitle: 'すべての結果',
-        score: 'スコア',
-
-        // Evaluation comments
-        evalExcellent: '優秀 - 非常に自然な表現',
-        evalGood: '良好 - 自然で流暢',
-        evalFair: '普通 - やや自然',
-        evalWeak: '弱い - やや不自然',
-        evalPoor: '不良 - 自然な文ではない可能性',
-
-        // Confidence
-        confidenceHigh: '高',
-        confidenceMedium: '中',
-        confidenceLow: '低',
-
-        // Messages
+        progressStep3: '参照文を準備中',
+        progressStep4: '意味類似度を計算中',
+        progressStep5: '候補を順位付け中',
+        slowWarning: 'モデル取得または計算に時間がかかっています。処理はキャンセルできます。',
+        topResultsTitle: '上位の候補',
+        allResultsTitle: '4位以降の候補',
+        comparisonScore: '比較スコア',
+        centroidMetric: '参照集合の重心との近さ',
+        referenceMetric: '上位{k}参照との近さ',
+        inputLength: '入力長',
+        lengthShort: '短い',
+        lengthMedium: '中程度',
+        lengthLong: '長い',
+        lengthTruncated: '上限超過',
+        lengthUnknown: '不明',
+        wordPieceUsage: '{used}/{limit} word pieces使用',
+        wordPieceOriginal: '元は{total} word pieces',
+        resultContextTitle: 'この結果の条件',
+        modelLabel: 'モデル',
+        runtimeLabel: '実行ライブラリー',
+        referenceCountLabel: '内蔵参照文',
+        referenceCountValue: '{count}文',
+        tokenLimitLabel: '候補ごとの上限',
+        tokenLimitValue: '{limit} word pieces',
+        presetLabelShort: 'プリセット',
+        scoreNotice: '比較スコアは、この参照集合に対する本ツール独自の合成値です。確率・品質点・復号正解の証明ではありません。',
         errorEmpty: '少なくとも1つの候補を入力してください。',
-        errorTooMany: '入力には{count}個の候補があります。最初の200個のみ処理されます。',
-        warningShort: 'すべての候補が短い（40文字未満）ため、結果の信頼度が低くなる可能性があります。',
-        errorProcessing: '処理中にエラーが発生しました。もう一度お試しください。',
-        errorNetwork: 'モデルの読み込みに失敗しました。初回実行時はインターネット接続を確認してください。',
-        infoCancelled: '処理がキャンセルされました。',
-
-        // Footer
-        githubText: '🔗 GitHubリポジトリはこちら（',
-        offline: 'オフライン',
-
-        // Language
-        langToggle: 'EN',
-
-        // Help modal
-        helpTitle: '使い方',
-        helpOverview: '概要',
-        helpOverviewText: 'このツールは、入力されたテキスト候補を意味的な自然さでランク付けします。機械学習モデルを使用して、各候補がどれだけ自然な文章かを評価します。',
-        helpUsage: '使用方法',
-        helpUsageStep1: 'テキストエリアに候補を入力（空行で区切る）',
-        helpUsageStep2: 'プリセットを選択（オプション）',
-        helpUsageStep3: '「実行」ボタンをクリック',
-        helpUsageStep4: '結果を確認',
+        errorTooMany: '入力には{count}個の候補があります。最初の200個だけを処理します。',
+        warningShort: 'すべての候補が32 word pieces未満です。短い入力ではスコア差が小さくなる場合があるため、順位だけで判断しないでください。',
+        warningTruncated: '{count}件は{limit} word piecesを超えたため、超過部分を比較に使っていません。',
+        errorProcessing: '処理中にエラーが発生しました。入力と接続状況を確認して、もう一度お試しください。',
+        errorNetwork: 'モデルまたは実行ライブラリーを取得できませんでした。キャッシュがない場合はインターネット接続が必要です。',
+        infoCancelled: '処理をキャンセルしました。',
+        githubText: '🔗 GitHubリポジトリ：',
+        offline: 'ブラウザーはオフライン',
+        langToggle: 'English',
+        helpButtonLabel: '使い方を開く',
+        langButtonLabel: '英語表示へ切り替える',
+        closeButtonLabel: '使い方を閉じる',
+        helpTitle: '使い方と限界',
+        helpOverview: 'このツールが比較するもの',
+        helpOverviewText: '英語の各候補をベクトル化し、内蔵した一般英文の集合へどれだけ近いかを比較します。文法検査、言語モデルによる流暢さ評価、暗号解読は行いません。',
+        helpUsage: '使い方',
+        helpUsageStep1: '英語の候補を空行で区切って入力する',
+        helpUsageStep2: '比較プリセットを選ぶ',
+        helpUsageStep3: '「比較する」を押す',
+        helpUsageStep4: '各成分と入力長を確認し、上位候補を人が検討する',
+        helpMetrics: '表示する値',
+        helpMetricCentroid: '参照集合の重心との近さ：内蔵英文全体の中心とのコサイン類似度',
+        helpMetricReference: '上位参照との近さ：候補に最も近いk文のコサイン類似度平均',
+        helpMetricCombined: '比較スコア：上の2値をプリセットの重みで合成した順位付け用の値',
         helpPresets: 'プリセット',
-        helpPresetBalanced: '自然さと参照類似度を均等に評価',
-        helpPresetNaturalness: '全体的な自然さを重視',
-        helpPresetReference: '参照文との類似度を重視',
-        helpPresetStrict: 'より少ない参照文で厳密に評価',
-        helpPresetBroad: 'より多くの参照文で幅広く評価',
-        helpEvaluation: '評価',
-        helpEvalExcellent: '非常に自然な表現',
-        helpEvalGood: '自然で流暢',
-        helpEvalFair: 'やや自然',
-        helpEvalWeak: 'やや不自然',
-        helpEvalPoor: '自然な文ではない可能性',
-        helpLimitations: '制限事項',
-        helpLimitCandidates: '最大200件の候補',
-        helpLimitModel: '初回はモデルのダウンロードが必要（約23MB）'
+        helpPresetBalanced: '2つの近さを同じ重みで合成',
+        helpPresetCentroid: '参照集合の重心との近さを多めに反映',
+        helpPresetNeighbors: '候補に近い参照例との近さを多めに反映',
+        helpPresetTop3: '最も近い3参照の平均を使用',
+        helpPresetTop7: '最も近い7参照の平均を使用',
+        helpLimitations: '限界',
+        helpLimitCandidates: '最大200候補。評価対象は英語のみ',
+        helpLimitModel: '初回などキャッシュがない場合は、外部CDNとHugging Faceから実行ファイルとモデルを取得',
+        helpLimitTokens: '各候補は256 word piecesまで。超過部分は表示で知らせて比較対象から除外',
+        helpLimitJudgement: '高いスコアでも、自然な英文や正しい復号であるとは限らない'
     },
     en: {
-        // Header
         title: 'Semantic Candidate Ranker',
-        subtitle: 'Rank plaintext candidates by semantic naturalness',
-
-        // Input section
-        candidatesLabel: 'Candidates',
+        subtitle: 'Compare English plaintext candidates by similarity to built-in references',
+        scopeNote: 'The ranking only helps compare the supplied candidates. It does not judge grammatical naturalness, decryption correctness, or the probability of being correct.',
+        candidatesLabel: 'English plaintext candidates',
+        inputHint: 'Use one block per candidate and separate blocks with a blank line. Leading key=value lines are display metadata and are excluded from scoring.',
         placeholder: 'Enter candidates separated by blank lines.\n\nExample:\nthis is the first candidate\n\nthis is the second candidate\n\nthis is the third candidate',
-
-        // Presets
-        presetLabel: 'Preset',
-        presetBalanced: 'Balanced',
-        presetNaturalness: 'Naturalness',
-        presetReference: 'Reference',
-        presetStrict: 'Strict',
-        presetBroad: 'Broad',
-
-        // Buttons
-        runButton: 'Run',
+        presetLabel: 'Comparison preset',
+        presetBalanced: 'Balanced (default)',
+        presetCentroid: 'Reference centroid',
+        presetNeighbors: 'Nearest references',
+        presetTop3: 'Top 3 references',
+        presetTop7: 'Top 7 references',
+        runButton: 'Compare',
         cancelButton: 'Cancel',
-        copyButton: 'Copy',
-        copiedButton: 'Copied!',
-        showButton: 'Show',
-        hideButton: 'Hide',
-
-        // Progress
+        copyButton: 'Copy original candidate',
+        copiedButton: 'Copied',
+        showButton: 'Show full text',
+        hideButton: 'Collapse',
         progressStep1: 'Loading model',
         progressStep2: 'Preparing candidates',
         progressStep3: 'Preparing references',
-        progressStep4: 'Computing similarities',
-        progressStep5: 'Ranking results',
-        slowWarning: 'Processing is taking longer than expected...',
-
-        // Results
-        topResultsTitle: 'Top Results',
-        allResultsTitle: 'All Results',
-        score: 'Score',
-
-        // Evaluation comments
-        evalExcellent: 'Excellent - Highly natural expression',
-        evalGood: 'Good - Natural and fluent',
-        evalFair: 'Fair - Moderately natural',
-        evalWeak: 'Weak - Somewhat unnatural',
-        evalPoor: 'Poor - Likely not natural text',
-
-        // Confidence
-        confidenceHigh: 'High',
-        confidenceMedium: 'Med',
-        confidenceLow: 'Low',
-
-        // Messages
-        errorEmpty: 'Please enter at least one candidate.',
-        errorTooMany: 'Input contains {count} candidates. Only the first 200 will be processed.',
-        warningShort: 'All candidates are short (< 40 characters). Results may have lower confidence.',
-        errorProcessing: 'An error occurred during processing. Please try again.',
-        errorNetwork: 'Failed to load model. Please check your internet connection for the first run.',
-        infoCancelled: 'Processing cancelled.',
-
-        // Footer
-        githubText: '🔗 GitHub Repository: ',
-        offline: 'Offline',
-
-        // Language
-        langToggle: 'JP',
-
-        // Help modal
-        helpTitle: 'How to Use',
-        helpOverview: 'Overview',
-        helpOverviewText: 'This tool ranks text candidates by semantic naturalness. It uses a machine learning model to evaluate how natural each candidate sentence is.',
+        progressStep4: 'Computing semantic similarity',
+        progressStep5: 'Ranking candidates',
+        slowWarning: 'The model download or computation is taking a while. You can cancel the operation.',
+        topResultsTitle: 'Top candidates',
+        allResultsTitle: 'Candidates ranked 4 and below',
+        comparisonScore: 'Comparison score',
+        centroidMetric: 'Proximity to reference centroid',
+        referenceMetric: 'Proximity to top {k} references',
+        inputLength: 'Input length',
+        lengthShort: 'Short',
+        lengthMedium: 'Medium',
+        lengthLong: 'Long',
+        lengthTruncated: 'Over limit',
+        lengthUnknown: 'Unknown',
+        wordPieceUsage: '{used}/{limit} word pieces used',
+        wordPieceOriginal: '{total} word pieces before truncation',
+        resultContextTitle: 'Conditions for this result',
+        modelLabel: 'Model',
+        runtimeLabel: 'Runtime library',
+        referenceCountLabel: 'Built-in references',
+        referenceCountValue: '{count} sentences',
+        tokenLimitLabel: 'Per-candidate limit',
+        tokenLimitValue: '{limit} word pieces',
+        presetLabelShort: 'Preset',
+        scoreNotice: 'The comparison score is this tool’s composite value for its fixed reference collection. It is not a probability, quality grade, or proof of correct decryption.',
+        errorEmpty: 'Enter at least one candidate.',
+        errorTooMany: 'The input contains {count} candidates. Only the first 200 will be processed.',
+        warningShort: 'Every candidate is under 32 word pieces. Short inputs can produce small score differences, so do not rely on rank alone.',
+        warningTruncated: '{count} candidate(s) exceeded {limit} word pieces. Text beyond the limit was not used for comparison.',
+        errorProcessing: 'An error occurred. Check the input and connection state, then try again.',
+        errorNetwork: 'The model or runtime library could not be retrieved. An internet connection is required when they are not cached.',
+        infoCancelled: 'Processing was cancelled.',
+        githubText: '🔗 GitHub repository: ',
+        offline: 'Browser is offline',
+        langToggle: '日本語',
+        helpButtonLabel: 'Open instructions',
+        langButtonLabel: 'Switch the interface to Japanese',
+        closeButtonLabel: 'Close instructions',
+        helpTitle: 'Usage and limitations',
+        helpOverview: 'What this tool compares',
+        helpOverviewText: 'The tool embeds each English candidate and compares it with a built-in collection of general English sentences. It is not a grammar checker, a language-model fluency evaluator, or a cipher solver.',
         helpUsage: 'Usage',
-        helpUsageStep1: 'Enter candidates in the text area (separate with blank lines)',
-        helpUsageStep2: 'Select a preset (optional)',
-        helpUsageStep3: 'Click the "Run" button',
-        helpUsageStep4: 'Review the results',
+        helpUsageStep1: 'Enter English candidates separated by blank lines',
+        helpUsageStep2: 'Choose a comparison preset',
+        helpUsageStep3: 'Select “Compare”',
+        helpUsageStep4: 'Inspect both components and the input length, then review the leading candidates yourself',
+        helpMetrics: 'Displayed values',
+        helpMetricCentroid: 'Reference-centroid proximity: cosine similarity to the center of all built-in references',
+        helpMetricReference: 'Top-reference proximity: average cosine similarity to the k nearest references',
+        helpMetricCombined: 'Comparison score: a preset-weighted composite used only for ranking',
         helpPresets: 'Presets',
-        helpPresetBalanced: 'Equal weight for naturalness and reference similarity',
-        helpPresetNaturalness: 'Prioritize overall naturalness',
-        helpPresetReference: 'Prioritize similarity to reference sentences',
-        helpPresetStrict: 'Strict evaluation with fewer references',
-        helpPresetBroad: 'Broad evaluation with more references',
-        helpEvaluation: 'Evaluation',
-        helpEvalExcellent: 'Highly natural expression',
-        helpEvalGood: 'Natural and fluent',
-        helpEvalFair: 'Moderately natural',
-        helpEvalWeak: 'Somewhat unnatural',
-        helpEvalPoor: 'Likely not natural text',
+        helpPresetBalanced: 'Weights the two proximity measures equally',
+        helpPresetCentroid: 'Gives more weight to proximity to the reference centroid',
+        helpPresetNeighbors: 'Gives more weight to proximity to the nearest reference examples',
+        helpPresetTop3: 'Averages the three nearest references',
+        helpPresetTop7: 'Averages the seven nearest references',
         helpLimitations: 'Limitations',
-        helpLimitCandidates: 'Maximum 200 candidates',
-        helpLimitModel: 'First run requires model download (~23MB)'
+        helpLimitCandidates: 'Up to 200 candidates; evaluation input must be English',
+        helpLimitModel: 'When not cached, the runtime and model are fetched from an external CDN and Hugging Face',
+        helpLimitTokens: 'Each candidate is limited to 256 word pieces; the UI reports truncation',
+        helpLimitJudgement: 'A high score does not establish natural English or a correct decryption'
     }
 };
 
 let currentLang = 'ja';
 
-/**
- * Get current language
- * @returns {string}
- */
 export function getCurrentLang() {
     return currentLang;
 }
 
-/**
- * Set current language
- * @param {string} lang - 'ja' or 'en'
- */
 export function setLang(lang) {
-    if (translations[lang]) {
-        currentLang = lang;
+    if (!translations[lang]) return;
+    currentLang = lang;
+    try {
         localStorage.setItem('semantic-ranker-lang', lang);
+    } catch {
+        // Language switching still works when storage is unavailable.
     }
 }
 
-/**
- * Initialize language from localStorage
- */
 export function initLang() {
-    const saved = localStorage.getItem('semantic-ranker-lang');
-    if (saved && translations[saved]) {
-        currentLang = saved;
+    try {
+        const saved = localStorage.getItem('semantic-ranker-lang');
+        if (saved && translations[saved]) currentLang = saved;
+    } catch {
+        currentLang = 'ja';
     }
 }
 
-/**
- * Get translation for a key
- * @param {string} key - Translation key
- * @param {Object} params - Optional parameters for interpolation
- * @returns {string}
- */
 export function t(key, params = {}) {
-    let text = translations[currentLang]?.[key] || translations['en'][key] || key;
-
-    // Simple interpolation for {param} placeholders
-    for (const [k, v] of Object.entries(params)) {
-        text = text.replace(`{${k}}`, v);
+    let text = translations[currentLang]?.[key] ?? translations.en[key] ?? key;
+    for (const [name, value] of Object.entries(params)) {
+        text = text.split(`{${name}}`).join(String(value));
     }
-
     return text;
 }
 
-/**
- * Get all translations for current language
- * @returns {Object}
- */
-export function getTranslations() {
-    return translations[currentLang] || translations['en'];
+export function getTranslations(lang = currentLang) {
+    return translations[lang] || translations.en;
 }

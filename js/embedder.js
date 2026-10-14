@@ -3,7 +3,9 @@
  * Handles model loading and text embedding with batch processing
  */
 
-const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+export const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+export const TRANSFORMERS_VERSION = '3.5.2';
+export const MODEL_WORDPIECE_LIMIT = 256;
 const BATCH_SIZE = 10;
 
 let pipeline = null;
@@ -24,7 +26,7 @@ export async function loadModel(signal, onProgress) {
     // Note: Dynamic imports don't support SRI. Version pinning (@3.5.2) provides
     // protection against unexpected changes. jsdelivr is a trusted CDN.
     const { pipeline: createPipeline } = await import(
-        'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.2'
+        `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}`
     );
 
     if (signal?.aborted) {
@@ -42,9 +44,44 @@ export async function loadModel(signal, onProgress) {
         }
     });
 
+    // The upstream model card defines 256 word pieces as the intended maximum.
+    // The browser port exposes a larger generic BERT limit, so pin the tokenizer
+    // here to keep the runtime behavior aligned with the model contract.
+    extractor.tokenizer.model_max_length = MODEL_WORDPIECE_LIMIT;
+
     if (signal?.aborted) {
         throw new DOMException('Model loading aborted', 'AbortError');
     }
+}
+
+/**
+ * Inspect the exact WordPiece usage of candidate texts with the loaded tokenizer.
+ * The token count includes the model's special tokens.
+ * @param {string[]} texts
+ * @returns {Promise<Array<{tokenCount: number, usedTokenCount: number, truncated: boolean}>>}
+ */
+export async function inspectTokenUsage(texts) {
+    if (!extractor?.tokenizer) {
+        throw new Error('Model not loaded. Call loadModel() first.');
+    }
+
+    const usage = [];
+    for (const text of texts) {
+        const encoded = await extractor.tokenizer(text, {
+            padding: false,
+            truncation: false,
+            return_tensor: false
+        });
+        const ids = encoded.input_ids;
+        const firstSequence = Array.isArray(ids?.[0]) ? ids[0] : ids;
+        const tokenCount = Array.isArray(firstSequence) ? firstSequence.length : 0;
+        usage.push({
+            tokenCount,
+            usedTokenCount: Math.min(tokenCount, MODEL_WORDPIECE_LIMIT),
+            truncated: tokenCount > MODEL_WORDPIECE_LIMIT
+        });
+    }
+    return usage;
 }
 
 /**
