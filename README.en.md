@@ -49,6 +49,7 @@ When the required files are not cached, the browser needs an internet connection
 ### It can
 
 - Rank up to 200 English plaintext candidates by semantic similarity to the built-in references
+- Load six generated candidates immediately from Caesar, Vigenère, or columnar input samples
 - Show proximity to the reference centroid and proximity to the nearest references separately from the composite score
 - Expand each candidate to inspect the reference sentences, collection indexes, and individual cosine values used for top-k proximity
 - Record a reference-set version and SHA-256 fingerprint with the result conditions
@@ -71,13 +72,13 @@ When the required files are not cached, the browser needs an internet connection
 ## 📖 Usage
 
 1. Produce English plaintext candidates with another solver or through manual analysis.
-2. Enter one candidate per block and separate blocks with a blank line.
+2. Enter one candidate per block and separate blocks with a blank line. For a quick trial, select a Caesar, Vigenère, or columnar input sample.
 3. Choose a comparison preset and select “Compare.”
 4. Inspect both proximity components, the input length, and any truncation notice rather than relying on rank alone.
 5. Expand “nearest references used” to inspect the sentences and individual cosine values that contributed to B.
 6. Review the leading candidates against the cipher method, key, and context.
 
-Changing the input or preset invalidates the displayed result. Changing the interface language redraws the same computed result without running the model again.
+An input sample only fills the candidate field and does not identify the correct candidate. Model retrieval and comparison begin after you select “Compare.” Changing the input or preset invalidates the displayed result. Changing the interface language redraws the same computed result without running the model again.
 
 ### Evaluation lab
 
@@ -279,6 +280,7 @@ semantic-candidate-ranker/
 │   ├── evaluation-cases.js    # Fixed 18-case set and fingerprint
 │   ├── evaluator.js           # Top-1, Top-3, MRR, and delta aggregation
 │   ├── i18n.js                # Japanese and English messages
+│   ├── input-samples.js       # Three normal-comparison input samples
 │   ├── normalizer.js          # Input parsing and normalization
 │   ├── perturbations.js       # Eight deterministic changes
 │   ├── reference-sentences.js # 300 fixed references
