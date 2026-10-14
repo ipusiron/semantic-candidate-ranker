@@ -281,6 +281,99 @@ try {
         throw new Error('Explained result failed after hostile input');
     }
 
+    await evaluate(`document.getElementById('evaluationTab').click()`);
+    const evaluationInitial = await evaluate(`({
+        panelVisible: !document.getElementById('evaluationPanel').hidden,
+        compareHidden: document.getElementById('comparePanel').hidden,
+        tabSelected: document.getElementById('evaluationTab').getAttribute('aria-selected'),
+        context: document.getElementById('evaluationContext').textContent,
+        caseOptions: document.getElementById('evaluationCaseSelect').options.length,
+        perturbationOptions: document.getElementById('perturbationTypeSelect').options.length,
+        hasOverflow: document.documentElement.scrollWidth > innerWidth
+    })`);
+    if (!evaluationInitial.panelVisible || !evaluationInitial.compareHidden || evaluationInitial.tabSelected !== 'true') {
+        throw new Error('Evaluation tab state is inconsistent');
+    }
+    if (!evaluationInitial.context.includes('eval-en-18-v1') ||
+        !evaluationInitial.context.includes('e763264a9b2d4c5ad5104f73cfbbb0e74e40c24e8e0546ee5ebab44d28756b3a')) {
+        throw new Error('Evaluation-set version or fingerprint is missing');
+    }
+    if (evaluationInitial.caseOptions !== 18 || evaluationInitial.perturbationOptions !== 8) {
+        throw new Error('Evaluation or perturbation options are incomplete');
+    }
+
+    await evaluate(`document.getElementById('evaluationRunBtn').click()`);
+    await waitFor(`!document.getElementById('evaluationResults').hidden || document.getElementById('evaluationMessages').classList.contains('error')`, 360000);
+    const evaluation = await evaluate(`({
+        error: document.getElementById('evaluationMessages').classList.contains('error')
+            ? document.getElementById('evaluationMessages').textContent : '',
+        metrics: [...document.querySelectorAll('#evaluationSummary .evaluation-metric-value')].map(node => node.textContent),
+        presetCards: document.querySelectorAll('.preset-result-card').length,
+        groupCards: document.querySelectorAll('.evaluation-group-card').length,
+        caseDetails: document.querySelectorAll('.evaluation-case').length,
+        notice: document.querySelector('.evaluation-dataset-notice')?.textContent || '',
+        hasOverflow: document.documentElement.scrollWidth > innerWidth
+    })`);
+    if (evaluation.error) throw new Error(evaluation.error);
+    if (evaluation.presetCards !== 5 || evaluation.groupCards !== 9 || evaluation.caseDetails !== 18) {
+        throw new Error('Evaluation summary is incomplete');
+    }
+    if (!evaluation.notice.includes('一般化を保証') || evaluation.hasOverflow) {
+        throw new Error('Evaluation limitation is missing or the lab overflows');
+    }
+
+    await command('Emulation.setDeviceMetricsOverride', {
+        width: 1280,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false
+    });
+    await evaluate(`document.querySelector('.evaluation-case summary').click()`);
+    await screenshot('screenshot-evaluation.png');
+    await evaluate(`document.getElementById('langToggle').click()`);
+    const evaluationEnglish = await evaluate(`({
+        lang: document.documentElement.lang,
+        title: document.getElementById('evaluationTitle').textContent,
+        resultPreserved: !document.getElementById('evaluationResults').hidden,
+        presetCards: document.querySelectorAll('.preset-result-card').length
+    })`);
+    if (evaluationEnglish.lang !== 'en' || !evaluationEnglish.resultPreserved || evaluationEnglish.presetCards !== 5) {
+        throw new Error('English evaluation redraw did not preserve the result');
+    }
+    await screenshot('screenshot-evaluation-en.png');
+    await evaluate(`document.getElementById('langToggle').click()`);
+
+    await command('Emulation.setDeviceMetricsOverride', {
+        width: 390,
+        height: 844,
+        deviceScaleFactor: 1,
+        mobile: true
+    });
+    await evaluate(`(() => {
+        globalThis.__evaluationXss = 0;
+        const input = document.getElementById('perturbationInput');
+        input.value = '<img src=x onerror="globalThis.__evaluationXss=1"> changed candidate';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        document.getElementById('perturbationRunBtn').click();
+    })()`);
+    await waitFor(`!document.getElementById('perturbationResults').hidden || document.getElementById('evaluationMessages').classList.contains('error')`, 180000);
+    const perturbation = await evaluate(`({
+        error: document.getElementById('evaluationMessages').classList.contains('error')
+            ? document.getElementById('evaluationMessages').textContent : '',
+        executed: globalThis.__evaluationXss,
+        injectedImages: document.querySelectorAll('#perturbationResults img').length,
+        presetCards: document.querySelectorAll('.perturbation-preset-card').length,
+        changedText: document.querySelectorAll('.perturbation-text-card .evaluation-candidate-text')[1]?.textContent || '',
+        hasOverflow: document.documentElement.scrollWidth > innerWidth
+    })`);
+    if (perturbation.error) throw new Error(perturbation.error);
+    if (perturbation.executed !== 0 || perturbation.injectedImages !== 0 || perturbation.presetCards !== 5) {
+        throw new Error('Perturbation result is incomplete or interpreted user HTML');
+    }
+    if (!perturbation.changedText.includes('<img') || perturbation.hasOverflow) {
+        throw new Error('Perturbation text is missing or overflows');
+    }
+
     const responsive = [];
     for (const width of [320, 390, 600, 1280]) {
         await command('Emulation.setDeviceMetricsOverride', {
@@ -294,7 +387,7 @@ try {
             width: innerWidth,
             scrollWidth: document.documentElement.scrollWidth,
             overflow: document.documentElement.scrollWidth > innerWidth,
-            minimumButtonHeight: Math.min(...[...document.querySelectorAll('button, summary')]
+            minimumButtonHeight: Math.min(...[...document.querySelectorAll('button, summary, select')]
                 .filter(control => control.offsetParent !== null)
                 .map(control => control.getBoundingClientRect().height))
         })`));
@@ -320,6 +413,10 @@ try {
         truncation,
         modal,
         xssAndRemaining,
+        evaluationInitial,
+        evaluation,
+        evaluationEnglish,
+        perturbation,
         responsive,
         relevantErrors
     }, null, 2));

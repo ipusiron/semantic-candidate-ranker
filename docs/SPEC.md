@@ -48,6 +48,35 @@ The evaluation text is `dear friend i will meet you at the station`; copy output
 - Interface language never changes the evaluation references or score
 - Existing results are redrawn, not recomputed, after a language change
 
+## Tool Views
+
+The application has two keyboard-operable tabs:
+
+- **Compare candidates** accepts user-supplied candidate blocks and ranks them with one selected preset.
+- **Evaluation lab** runs the fixed `eval-en-18-v1` dataset through all five presets and compares a selected perturbation with its original case.
+
+Switching tabs or interface language preserves completed comparison and evaluation results. The evaluation lab does not modify the user input in the comparison tab.
+
+## Fixed Evaluation Dataset
+
+- 18 cases: six cipher families × three authored length groups
+- Six candidates per case, for 108 candidates in total
+- One labeled correct candidate and five candidates from wrong settings in each case
+- Correct positions 1 through 6 each occur in exactly three cases
+- Evaluation plaintexts are separate from the 300 reference sentences
+- Version: `eval-en-18-v1`
+- SHA-256: `e763264a9b2d4c5ad5104f73cfbbb0e74e40c24e8e0546ee5ebab44d28756b3a`
+
+The length groups are dataset-design categories, not the runtime tokenizer bands shown for arbitrary input. The dataset is generated deterministically from fixed plaintexts and cipher settings. Its version and fingerprint must change when the ordered evaluated content changes.
+
+The lab reports Top-1, Top-3, mean reciprocal rank (MRR), and median correct rank. These are descriptive observations on the fixed dataset. They must not be presented as general accuracy, confidence, a calibrated quality measure, or evidence that one preset is generally best.
+
+## Perturbation Comparison
+
+The lab provides eight deterministic starting changes: letter case, whitespace, punctuation, one-character substitution, word deletion, local word reordering, appending an unrelated sentence, and extension beyond 256 word pieces. The changed text remains editable.
+
+Only the labeled correct candidate is replaced and re-embedded. The other five candidates, model, reference collection, and selected case remain fixed. The UI reports observed changes in rank, composite, A, B, and top-k neighbor membership. It does not infer why the change occurred or whether it improves text quality.
+
 ## Model Contract
 
 - Model ID: `Xenova/all-MiniLM-L6-v2`
@@ -108,6 +137,8 @@ Every result set includes:
 Input or preset mutation invalidates the displayed result.
 
 The fingerprint is computed over UTF-8 `JSON.stringify(referenceSentences)` in source order. It identifies the exact collection used by this version; it is not a signature or third-party authenticity proof.
+
+Evaluation context separately displays the evaluation-set version, full SHA-256 fingerprint, case count, candidate count, and composition.
 
 ## Processing and Cancellation
 

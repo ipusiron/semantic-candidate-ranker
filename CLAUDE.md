@@ -22,6 +22,9 @@ js/
   app.js                  # five-stage orchestration
   embedder.js             # model loading, embedding, exact token inspection
   scorer.js               # pure vector scoring and stable ranking
+  evaluation-cases.js     # fixed 18-case dataset, version, and fingerprint
+  evaluator.js            # metric aggregation and perturbation comparison
+  perturbations.js        # deterministic candidate changes
   normalizer.js           # block parsing, metadata exclusion, normalization
   ui.js                   # DOM rendering; user values use textContent
   i18n.js                 # complete Japanese and English dictionaries
@@ -60,6 +63,9 @@ Do not label A as naturalness, the composite as probability or quality, or the d
 - Candidates over 256 word pieces show both used and original counts
 - Input and preset changes invalidate old results
 - Language changes redraw any current result without recomputing it
+- The evaluation lab uses `eval-en-18-v1`: 18 cases, 108 candidates, and a full SHA-256 fingerprint
+- Evaluation reports Top-1, Top-3, MRR, and median correct rank across all five presets without calling them general accuracy or a best preset
+- Perturbation comparison changes only the labeled correct candidate and keeps the other five candidates fixed
 - User-controlled content must not be assigned to `innerHTML`
 - Nearest-reference disclosures must remain explanatory only and must not imply correctness, naturalness, provenance, or confidence
 - Preserve 320–390px layouts without horizontal overflow and keep controls at least 44px high
@@ -82,6 +88,9 @@ node --check js/scorer.js
 node --check js/normalizer.js
 node --check js/i18n.js
 node --check js/ui.js
+node --check js/evaluation-cases.js
+node --check js/evaluator.js
+node --check js/perturbations.js
 ```
 
 For a publication check, verify HTTP and public HTTPS behavior at 390px and desktop width, language redraw, exact tokenizer truncation reporting, no horizontal overflow, no console errors, and local/public file hashes.

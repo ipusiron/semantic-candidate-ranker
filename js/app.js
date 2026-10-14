@@ -3,8 +3,11 @@
  * Orchestrates the 5-stage processing pipeline
  */
 
-import { parseCandidates, validateCandidates } from './normalizer.js';
+import { normalizeText, parseCandidates, validateCandidates } from './normalizer.js';
 import { PRESETS, rankCandidates } from './scorer.js';
+import { EVALUATION_CASES, EVALUATION_SET_VERSION, EVALUATION_SET_FINGERPRINT } from './evaluation-cases.js';
+import { evaluatePreparedCases, summarizeGroups, compareCaseResults } from './evaluator.js';
+import { buildPerturbedText } from './perturbations.js';
 import {
     loadModel,
     embedTexts,
@@ -29,14 +32,21 @@ import {
     updateProgress,
     showSlowWarning,
     showMessage,
-    renderResults
+    renderResults,
+    configureEvaluation,
+    getPerturbationRequest,
+    showEvaluationMessage,
+    renderEvaluationResults,
+    renderPerturbationResults
 } from './ui.js';
 
 // Application state
 const state = {
     isProcessing: false,
     abortController: null,
-    slowWarningTimeout: null
+    slowWarningTimeout: null,
+    activeMode: null,
+    evaluationCache: null
 };
 
 // Timing constants
@@ -47,7 +57,30 @@ const SLOW_THRESHOLD_MS = 20000;
  */
 function init() {
     initUI();
-    setButtonHandlers(handleRun, handleCancel);
+    configureEvaluation(EVALUATION_CASES, {
+        version: EVALUATION_SET_VERSION,
+        fingerprint: EVALUATION_SET_FINGERPRINT,
+        caseCount: EVALUATION_CASES.length,
+        candidateCount: EVALUATION_CASES.reduce((sum, item) => sum + item.candidates.length, 0)
+    }, buildPerturbedText);
+    setButtonHandlers(
+        handleRun,
+        handleCancel,
+        handleEvaluationRun,
+        handleCancel,
+        handlePerturbationRun
+    );
+}
+
+function beginProcessing(mode) {
+    state.isProcessing = true;
+    state.activeMode = mode;
+    state.abortController = new AbortController();
+    showProcessing(mode);
+    state.slowWarningTimeout = setTimeout(() => {
+        if (state.isProcessing) showSlowWarning(mode);
+    }, SLOW_THRESHOLD_MS);
+    return state.abortController.signal;
 }
 
 /**
@@ -76,18 +109,7 @@ async function handleRun() {
     }));
 
     // Start processing
-    state.isProcessing = true;
-    state.abortController = new AbortController();
-    const signal = state.abortController.signal;
-
-    showProcessing();
-
-    // Set slow warning timeout
-    state.slowWarningTimeout = setTimeout(() => {
-        if (state.isProcessing) {
-            showSlowWarning();
-        }
-    }, SLOW_THRESHOLD_MS);
+    const signal = beginProcessing('compare');
 
     try {
         // Stage 1: Load model
@@ -173,7 +195,146 @@ async function handleRun() {
         }
 
     } catch (error) {
-        handleError(error);
+        handleError(error, 'compare');
+    } finally {
+        cleanup();
+    }
+}
+
+async function prepareEvaluation(signal) {
+    await loadModel(signal);
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    updateProgress(2, 'evaluation');
+
+    const flattened = EVALUATION_CASES.flatMap(caseDefinition =>
+        caseDefinition.candidates.map(candidate => candidate.text)
+    );
+    const tokenUsage = await inspectTokenUsage(flattened);
+    updateProgress(3, 'evaluation');
+    const referenceSentences = getReferenceSentences('en');
+    const { embeddings: referenceEmbeddings, centroid } = await getOrComputeReferenceEmbeddings(
+        referenceSentences,
+        signal,
+        null
+    );
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+    updateProgress(4, 'evaluation');
+    const embeddings = await embedTexts(flattened, signal, null);
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+    let offset = 0;
+    const preparedByCase = EVALUATION_CASES.map(caseDefinition =>
+        caseDefinition.candidates.map(candidate => {
+            const index = offset++;
+            return {
+                text: candidate.text,
+                rawText: candidate.text,
+                meta: { setting: candidate.setting },
+                embedding: embeddings[index],
+                ...tokenUsage[index]
+            };
+        })
+    );
+    return { referenceSentences, referenceEmbeddings, centroid, preparedByCase };
+}
+
+function renderCachedEvaluation(cache) {
+    const balancedCases = cache.presetResults.balanced.cases;
+    renderEvaluationResults(cache.presetResults, {
+        cases: EVALUATION_CASES,
+        familyGroups: summarizeGroups(balancedCases, 'family'),
+        lengthGroups: summarizeGroups(balancedCases, 'lengthGroup')
+    });
+}
+
+async function handleEvaluationRun() {
+    if (state.isProcessing) return;
+    const signal = beginProcessing('evaluation');
+    try {
+        updateProgress(1, 'evaluation');
+        if (!state.evaluationCache) {
+            const prepared = await prepareEvaluation(signal);
+            updateProgress(5, 'evaluation');
+            const presetResults = evaluatePreparedCases(
+                EVALUATION_CASES,
+                prepared.preparedByCase,
+                prepared.centroid,
+                prepared.referenceEmbeddings,
+                prepared.referenceSentences,
+                PRESETS
+            );
+            state.evaluationCache = { ...prepared, presetResults };
+        }
+        renderCachedEvaluation(state.evaluationCache);
+    } catch (error) {
+        handleError(error, 'evaluation');
+    } finally {
+        cleanup();
+    }
+}
+
+async function handlePerturbationRun() {
+    if (state.isProcessing || !state.evaluationCache) return;
+    const request = getPerturbationRequest();
+    const normalizedText = normalizeText(request.text);
+    if (!normalizedText) {
+        showEvaluationMessage({ key: 'perturbationEmptyError' }, 'error');
+        return;
+    }
+    const caseIndex = EVALUATION_CASES.findIndex(item => item.id === request.caseId);
+    if (caseIndex < 0) return;
+    const caseDefinition = EVALUATION_CASES[caseIndex];
+    const correctIndex = caseDefinition.candidates.findIndex(
+        candidate => candidate.id === caseDefinition.correctCandidateId
+    );
+    const signal = beginProcessing('evaluation');
+    try {
+        updateProgress(1, 'evaluation');
+        await loadModel(signal);
+        updateProgress(2, 'evaluation');
+        const [afterUsage] = await inspectTokenUsage([normalizedText]);
+        updateProgress(3, 'evaluation');
+        const [embedding] = await embedTexts([normalizedText], signal, null);
+        if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+        updateProgress(4, 'evaluation');
+
+        const basePrepared = state.evaluationCache.preparedByCase[caseIndex];
+        const changedPrepared = basePrepared.map((candidate, index) => index === correctIndex
+            ? { ...candidate, text: normalizedText, rawText: request.text, embedding, ...afterUsage }
+            : candidate
+        );
+        const afterPresetResults = evaluatePreparedCases(
+            [caseDefinition],
+            [changedPrepared],
+            state.evaluationCache.centroid,
+            state.evaluationCache.referenceEmbeddings,
+            state.evaluationCache.referenceSentences,
+            PRESETS
+        );
+        updateProgress(5, 'evaluation');
+
+        const comparisons = {};
+        for (const presetName of Object.keys(PRESETS)) {
+            const before = state.evaluationCache.presetResults[presetName].cases[caseIndex];
+            const after = afterPresetResults[presetName].cases[0];
+            comparisons[presetName] = {
+                before,
+                after,
+                delta: compareCaseResults(before, after)
+            };
+        }
+        renderCachedEvaluation(state.evaluationCache);
+        renderPerturbationResults({
+            beforeText: caseDefinition.sourcePlaintext,
+            afterText: request.text,
+            beforeUsage: basePrepared[correctIndex],
+            afterUsage,
+            tokenLimit: MODEL_WORDPIECE_LIMIT,
+            comparisons
+        });
+    } catch (error) {
+        handleError(error, 'evaluation');
     } finally {
         cleanup();
     }
@@ -192,16 +353,17 @@ function handleCancel() {
  * Handle errors during processing
  * @param {Error} error
  */
-function handleError(error) {
+function handleError(error, mode = state.activeMode || 'compare') {
     console.error('Processing error:', error);
     const message = String(error?.message || '').toLowerCase();
+    const show = mode === 'evaluation' ? showEvaluationMessage : showMessage;
 
     if (error.name === 'AbortError') {
-        showMessage({ key: 'infoCancelled' }, 'info');
+        show({ key: mode === 'evaluation' ? 'evaluationCancelled' : 'infoCancelled' }, 'info');
     } else if (message.includes('network') || message.includes('fetch')) {
-        showMessage({ key: 'errorNetwork' }, 'error');
+        show({ key: 'errorNetwork' }, 'error');
     } else {
-        showMessage({ key: 'errorProcessing' }, 'error');
+        show({ key: mode === 'evaluation' ? 'evaluationProcessingError' : 'errorProcessing' }, 'error');
     }
 }
 
@@ -211,6 +373,7 @@ function handleError(error) {
 function cleanup() {
     state.isProcessing = false;
     state.abortController = null;
+    state.activeMode = null;
 
     if (state.slowWarningTimeout) {
         clearTimeout(state.slowWarningTimeout);

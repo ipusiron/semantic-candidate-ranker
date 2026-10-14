@@ -14,6 +14,28 @@ test('HTML declares responsive bilingual controls and accurate preset values', a
     assert.doesNotMatch(html, /http-equiv="X-Content-Type-Options"/i);
 });
 
+test('HTML exposes two associated tab panels and the complete evaluation controls', async () => {
+    const html = await read('index.html');
+    assert.match(html, /id="compareTab"[^>]*role="tab"[^>]*aria-controls="comparePanel"/);
+    assert.match(html, /id="evaluationTab"[^>]*role="tab"[^>]*aria-controls="evaluationPanel"/);
+    assert.match(html, /id="comparePanel"[^>]*role="tabpanel"[^>]*aria-labelledby="compareTab"/);
+    assert.match(html, /id="evaluationPanel"[^>]*role="tabpanel"[^>]*aria-labelledby="evaluationTab"/);
+    for (const id of [
+        'evaluationRunBtn',
+        'evaluationSummary',
+        'presetComparison',
+        'groupResults',
+        'caseResults',
+        'evaluationCaseSelect',
+        'perturbationTypeSelect',
+        'perturbationInput',
+        'perturbationRunBtn',
+        'perturbationResults'
+    ]) {
+        assert.match(html, new RegExp(`id="${id}"`));
+    }
+});
+
 test('CSP is constrained to required model origins without unsafe inline script', async () => {
     const html = await read('index.html');
     assert.match(html, /Content-Security-Policy/);
@@ -30,4 +52,5 @@ test('UI does not assign innerHTML or use document.write/eval', async () => {
     assert.doesNotMatch(ui, /\beval\s*\(/);
     assert.match(ui, /makeElement\('details', 'nearest-references'\)/);
     assert.match(ui, /reference\.text \|\| ''/);
+    assert.match(ui, /makeElement\('p', 'evaluation-candidate-text'/);
 });

@@ -51,3 +51,11 @@
 .result-item {
     padding: 14px 16px;
 }
+
+.preset-comparison {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.perturbation-preset-results {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
