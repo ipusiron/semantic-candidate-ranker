@@ -3,6 +3,7 @@
  */
 
 import { t, getCurrentLang, setLang, initLang } from './i18n.js';
+import { getInputSample } from './input-samples.js';
 
 const elements = {};
 let lastRender = null;
@@ -17,7 +18,9 @@ let previousFocus = null;
 
 const elementIds = [
     'helpBtn', 'langToggle', 'title', 'subtitle', 'scopeNote', 'candidatesLabel',
-    'inputHint', 'candidateInput', 'presetLabel', 'presetSelect', 'runBtn',
+    'inputHint', 'candidateInput', 'inputSamplesLabel', 'inputSamplesHint',
+    'inputSampleCaesar', 'inputSampleVigenere', 'inputSampleColumnar',
+    'presetLabel', 'presetSelect', 'runBtn',
     'cancelBtn', 'messages', 'progress', 'slowWarning', 'results', 'resultContext',
     'scoreNotice', 'topResultsTitle', 'topResults', 'allResultsBlock',
     'allResultsTitle', 'allResults', 'offlineIndicator', 'githubText', 'helpModal',
@@ -55,6 +58,9 @@ export function initUI() {
     elements.modalBackdrop?.addEventListener('click', closeHelpModal);
     elements.langToggle?.addEventListener('click', toggleLanguage);
     elements.candidateInput?.addEventListener('input', invalidateResults);
+    for (const button of document.querySelectorAll('[data-input-sample]')) {
+        button.addEventListener('click', () => loadInputSample(button.dataset.inputSample));
+    }
     elements.presetSelect?.addEventListener('change', invalidateResults);
     elements.compareTab?.addEventListener('click', () => switchTab('compare'));
     elements.evaluationTab?.addEventListener('click', () => switchTab('evaluation'));
@@ -170,6 +176,21 @@ const presetTranslationKeys = {
     top7: 'presetTop7'
 };
 
+const inputSampleTranslationKeys = {
+    'caesar-short': 'inputSampleCaesar',
+    'vigenere-medium': 'inputSampleVigenere',
+    'columnar-long': 'inputSampleColumnar'
+};
+
+function loadInputSample(sampleId) {
+    const sample = getInputSample(sampleId);
+    if (!sample || !elements.candidateInput) return;
+    elements.candidateInput.value = sample.input;
+    elements.candidateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    showMessage({ key: 'inputSampleLoaded', params: { count: sample.candidateCount } }, 'info');
+    elements.candidateInput.focus();
+}
+
 function updateUILanguage() {
     const lang = getCurrentLang();
     document.documentElement.lang = lang;
@@ -183,7 +204,9 @@ function updateUILanguage() {
 
     const textBindings = {
         title: 'title', subtitle: 'subtitle', scopeNote: 'scopeNote',
-        candidatesLabel: 'candidatesLabel', inputHint: 'inputHint', presetLabel: 'presetLabel',
+        candidatesLabel: 'candidatesLabel', inputHint: 'inputHint',
+        inputSamplesLabel: 'inputSamplesLabel', inputSamplesHint: 'inputSamplesHint',
+        presetLabel: 'presetLabel',
         runBtn: 'runButton', cancelBtn: 'cancelButton', slowWarning: 'slowWarning',
         topResultsTitle: 'topResultsTitle', allResultsTitle: 'allResultsTitle',
         scoreNotice: 'scoreNotice', githubText: 'githubText', offlineIndicator: 'offline',
@@ -215,6 +238,9 @@ function updateUILanguage() {
         for (const option of elements.presetSelect.options) {
             option.textContent = t(presetTranslationKeys[option.value]);
         }
+    }
+    for (const button of document.querySelectorAll('[data-input-sample]')) {
+        button.textContent = t(inputSampleTranslationKeys[button.dataset.inputSample]);
     }
 
     elements.progress?.querySelectorAll('.step-label').forEach((label, index) => {
@@ -355,6 +381,7 @@ export function showProcessing(mode = 'compare') {
     elements.evaluationRunBtn.hidden = evaluationMode;
     elements.evaluationCancelBtn.hidden = !evaluationMode;
     elements.candidateInput.disabled = true;
+    for (const button of document.querySelectorAll('[data-input-sample]')) button.disabled = true;
     elements.presetSelect.disabled = true;
     elements.evaluationCaseSelect.disabled = true;
     elements.perturbationTypeSelect.disabled = true;
@@ -381,6 +408,7 @@ export function showIdle() {
     elements.evaluationRunBtn.hidden = false;
     elements.evaluationCancelBtn.hidden = true;
     elements.candidateInput.disabled = false;
+    for (const button of document.querySelectorAll('[data-input-sample]')) button.disabled = false;
     elements.presetSelect.disabled = false;
     elements.evaluationCaseSelect.disabled = false;
     elements.perturbationTypeSelect.disabled = false;

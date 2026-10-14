@@ -62,6 +62,16 @@
                 rows="10"
             ></textarea>
 
+            <div class="input-samples" aria-labelledby="inputSamplesLabel">
+                <span id="inputSamplesLabel" class="input-samples-label">入力サンプル</span>
+                <div class="input-sample-buttons">
+                    <button id="inputSampleCaesar" class="input-sample-btn" type="button" data-input-sample="caesar-short">Caesar（短文）</button>
+                    <button id="inputSampleVigenere" class="input-sample-btn" type="button" data-input-sample="vigenere-medium">Vigenère（中程度）</button>
+                    <button id="inputSampleColumnar" class="input-sample-btn" type="button" data-input-sample="columnar-long">列転置（長文）</button>
+                </div>
+                <p id="inputSamplesHint" class="input-samples-hint">暗号方式ごとに生成済みの6候補を入力します。正解は表示しません。</p>
+            </div>
+
             <div class="controls">
                 <div class="preset-selector">
                     <label for="presetSelect" id="presetLabel">比較プリセット</label>

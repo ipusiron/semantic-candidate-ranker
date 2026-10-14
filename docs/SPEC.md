@@ -11,6 +11,8 @@ Compare English plaintext candidates by semantic similarity to a fixed collectio
 - Line breaks inside a candidate are allowed and become spaces during normalization
 - Input and reference language: English
 
+Three ready-to-use input samples load the six generated candidates from the fixed Caesar-short, Vigenère-medium, and columnar-long evaluation cases. Sample serialization includes only `method` and `setting` metadata plus candidate text; it does not expose the correct/wrong labels. Loading a sample replaces the comparison textarea and invalidates any previous result, but it does not start model retrieval or comparison.
+
 ## Metadata Exclusion
 
 Consecutive `key=value` lines at the start of each block are metadata.

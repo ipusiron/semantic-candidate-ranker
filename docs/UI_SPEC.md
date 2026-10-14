@@ -4,7 +4,7 @@
 
 1. Header: help, language switch, title, subtitle, scope warning
 2. Centered tab list: Compare candidates, Evaluation lab
-3. Compare panel: input, preset, processing status, execution conditions, top cards, and remaining candidates
+3. Compare panel: input, three input samples, preset, processing status, execution conditions, top cards, and remaining candidates
 4. Evaluation panel: dataset identity, run/cancel, metrics, grouped results, case details, and perturbation comparison
 5. Footer: GitHub link and browser-offline indicator
 
@@ -24,8 +24,10 @@ The tab list follows the ARIA tab pattern. Left/Right Arrow, Home, and End move 
 ## Input State
 
 - Textarea and preset remain editable while idle
+- Three sample buttons load six candidates from the Caesar-short, Vigenère-medium, or columnar-long evaluation case without identifying the correct candidate
+- Loading a sample replaces the textarea, invalidates stale results, and does not start a model download; Compare remains a separate explicit action
 - Compare starts processing; Cancel replaces Compare during processing
-- Input, preset, and language controls are disabled while processing
+- Input, sample, preset, and language controls are disabled while processing
 - Input or preset changes hide stale results and messages
 
 The evaluation controls are independent of the comparison input. Starting either operation disables both tabs and other conflicting controls until completion or cancellation.

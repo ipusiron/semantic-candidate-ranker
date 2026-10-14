@@ -11,6 +11,9 @@ test('HTML declares responsive bilingual controls and accurate preset values', a
     for (const value of ['balanced', 'centroid', 'neighbors', 'top3', 'top7']) {
         assert.match(html, new RegExp(`value="${value}"`));
     }
+    for (const sampleId of ['caesar-short', 'vigenere-medium', 'columnar-long']) {
+        assert.match(html, new RegExp(`data-input-sample="${sampleId}"`));
+    }
     assert.doesNotMatch(html, /http-equiv="X-Content-Type-Options"/i);
 });
 

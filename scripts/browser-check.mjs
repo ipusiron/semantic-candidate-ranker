@@ -135,6 +135,24 @@ try {
     })`);
     if (initial.hasOverflow) throw new Error('Initial 390px layout overflows horizontally');
 
+    const inputSample = await evaluate(`(() => {
+        document.getElementById('inputSampleCaesar').click();
+        const value = document.getElementById('candidateInput').value;
+        return {
+            buttonCount: document.querySelectorAll('[data-input-sample]').length,
+            blockCount: value.split(/\\n\\s*\\n/).length,
+            hasMethod: value.includes('method=caesar'),
+            hasAnswerLabel: /candidate_id=|correct=|wrong=/i.test(value),
+            status: document.getElementById('messages').textContent,
+            resultsHidden: document.getElementById('results').hidden,
+            hasOverflow: document.documentElement.scrollWidth > innerWidth
+        };
+    })()`);
+    if (inputSample.buttonCount !== 3 || inputSample.blockCount !== 6 || !inputSample.hasMethod ||
+        inputSample.hasAnswerLabel || !inputSample.resultsHidden || inputSample.hasOverflow) {
+        throw new Error('Input sample controls did not load the expected safe six-candidate set');
+    }
+
     await evaluate(`(() => {
         const input = document.getElementById('candidateInput');
         input.value = [
@@ -407,6 +425,7 @@ try {
 
     console.log(JSON.stringify({
         initial,
+        inputSample,
         resultState,
         nearestReferences,
         english,

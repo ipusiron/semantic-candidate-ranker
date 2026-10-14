@@ -36,6 +36,8 @@ test('Japanese and English READMEs agree on critical numeric contracts and links
     assert.match(en, /\[日本語版README\]\(README\.md\)/);
     assert.match(ja, /真正性の証明や署名ではありません/);
     assert.match(en, /not a third-party authenticity proof or signature/);
+    assert.match(ja, /入力サンプル/);
+    assert.match(en, /input sample/i);
 });
 
 test('documentation does not claim calibrated labels, confidence, or guaranteed offline use', async () => {

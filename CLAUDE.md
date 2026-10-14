@@ -56,6 +56,7 @@ Do not label A as naturalness, the composite as probability or quality, or the d
 
 - English plaintext input only; Japanese and English interface text
 - Up to 200 blank-line-separated candidate blocks
+- Three normal-view input samples reuse six candidates from selected fixed evaluation cases without exposing the answer label; loading is separate from running the model
 - Consecutive leading `key=value` lines are metadata and excluded from evaluation
 - Model, runtime version, reference count, token limit, and preset accompany results
 - Reference-set version and full SHA-256 accompany results; tests must recompute the fingerprint from the ordered English JSON array
