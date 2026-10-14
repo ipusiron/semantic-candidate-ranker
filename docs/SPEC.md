@@ -69,6 +69,8 @@ comparison_score = wA * A + wB * B
 
 The UI displays A, B, and the composite. These are reference-proximity values, not probabilities or quality scores.
 
+For each candidate, the scorer also retains the top-k reference indexes and individual cosine values used for B. Equal cosine values keep source-collection order. The UI resolves those indexes to the exact reference sentences and discloses both raw cosine and `(cosine + 1) / 2` display proximity.
+
 | Preset ID | wA | wB | k |
 | --- | ---: | ---: | ---: |
 | `balanced` | 0.5 | 0.5 | 5 |
@@ -97,11 +99,15 @@ Every result set includes:
 - model ID
 - Transformers.js version
 - reference sentence count
+- reference-set version (`en-300-v1`)
+- reference-set SHA-256 (`99438d5c1522c3c66cf5378ace2cc5382f632bdb95ef111fb83758a38a3a5e31`)
 - token limit
 - selected preset
 - truncation warning count, when nonzero
 
 Input or preset mutation invalidates the displayed result.
+
+The fingerprint is computed over UTF-8 `JSON.stringify(referenceSentences)` in source order. It identifies the exact collection used by this version; it is not a signature or third-party authenticity proof.
 
 ## Processing and Cancellation
 

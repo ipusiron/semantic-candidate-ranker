@@ -96,7 +96,9 @@ function updateHelpContent() {
     }
     elements.helpBody.appendChild(steps);
 
-    addHelpSection('helpMetrics', ['helpMetricCentroid', 'helpMetricReference', 'helpMetricCombined']);
+    addHelpSection('helpMetrics', [
+        'helpMetricCentroid', 'helpMetricReference', 'helpMetricCombined', 'helpMetricEvidence'
+    ]);
     addHelpSection('helpPresets', [
         'helpPresetBalanced', 'helpPresetCentroid', 'helpPresetNeighbors',
         'helpPresetTop3', 'helpPresetTop7'
@@ -251,6 +253,7 @@ function addDefinitionPair(list, term, value) {
     const group = makeElement('div', 'definition-pair');
     group.append(makeElement('dt', '', term), makeElement('dd', '', value));
     list.appendChild(group);
+    return group;
 }
 
 function getPresetLabel(presetName) {
@@ -265,6 +268,13 @@ function renderResultContext(context) {
     addDefinitionPair(list, t('modelLabel'), context.modelId);
     addDefinitionPair(list, t('runtimeLabel'), `Transformers.js ${context.transformersVersion}`);
     addDefinitionPair(list, t('referenceCountLabel'), t('referenceCountValue', { count: context.referenceCount }));
+    addDefinitionPair(list, t('referenceVersionLabel'), context.referenceVersion);
+    const fingerprint = addDefinitionPair(
+        list,
+        t('referenceFingerprintLabel'),
+        context.referenceFingerprint
+    );
+    fingerprint.querySelector('dd')?.classList.add('reference-fingerprint');
     addDefinitionPair(list, t('tokenLimitLabel'), t('tokenLimitValue', { limit: context.tokenLimit }));
     addDefinitionPair(list, t('presetLabelShort'), getPresetLabel(context.presetName));
     elements.resultContext.append(title, list);
@@ -332,6 +342,45 @@ function makeCopyButton(text) {
     return button;
 }
 
+function renderNearestReferenceBody(container, references) {
+    const notice = makeElement('p', 'nearest-references-notice', t('nearestReferencesNotice'));
+    const list = makeElement('ol', 'nearest-references-list');
+    for (const reference of references) {
+        const item = makeElement('li', 'nearest-reference-item');
+        const header = makeElement('div', 'nearest-reference-header');
+        header.append(
+            makeElement('span', 'nearest-reference-index', t('nearestReferenceIndex', {
+                index: reference.referenceIndex + 1
+            })),
+            makeElement('span', 'nearest-reference-metrics', t('nearestReferenceMetrics', {
+                cosine: reference.cosineSimilarity.toFixed(3),
+                proximity: reference.proximity.toFixed(3)
+            }))
+        );
+        item.append(header, makeElement('p', 'nearest-reference-text', reference.text || ''));
+        list.appendChild(item);
+    }
+    container.replaceChildren(notice, list);
+}
+
+function createNearestReferenceDetails(result) {
+    const details = makeElement('details', 'nearest-references');
+    const references = result.nearestReferences || [];
+    const summary = makeElement('summary', '', t('nearestReferencesSummary', {
+        count: references.length
+    }));
+    const body = makeElement('div', 'nearest-references-body');
+    let rendered = false;
+    details.addEventListener('toggle', () => {
+        if (details.open && !rendered) {
+            renderNearestReferenceBody(body, references);
+            rendered = true;
+        }
+    });
+    details.append(summary, body);
+    return details;
+}
+
 function createTopResultCard(result, context) {
     const card = makeElement('article', `result-card rank-${result.rank}`);
     card.appendChild(makeElement('div', 'rank-badge', String(result.rank)));
@@ -339,6 +388,7 @@ function createTopResultCard(result, context) {
     card.appendChild(makeElement('div', 'candidate-text', result.text));
     card.appendChild(createMetrics(result, context.topK));
     card.appendChild(createLengthBlock(result, context.tokenLimit));
+    card.appendChild(createNearestReferenceDetails(result));
     card.appendChild(makeCopyButton(result.rawText || result.text));
     return card;
 }
@@ -363,6 +413,7 @@ function createResultItem(result, context) {
     });
     actions.append(toggle, makeCopyButton(result.rawText || result.text));
     item.appendChild(actions);
+    item.appendChild(createNearestReferenceDetails(result));
     return item;
 }
 

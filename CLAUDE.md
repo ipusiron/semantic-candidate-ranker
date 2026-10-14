@@ -25,7 +25,7 @@ js/
   normalizer.js           # block parsing, metadata exclusion, normalization
   ui.js                   # DOM rendering; user values use textContent
   i18n.js                 # complete Japanese and English dictionaries
-  reference-sentences.js  # fixed 300-sentence English collection
+  reference-sentences.js  # fixed collection, version, and SHA-256 fingerprint
 style/                    # base, mobile, tablet, and laptop rules
 docs/                     # functional and technical contracts
 test/                     # Node standard-library regression tests
@@ -55,10 +55,13 @@ Do not label A as naturalness, the composite as probability or quality, or the d
 - Up to 200 blank-line-separated candidate blocks
 - Consecutive leading `key=value` lines are metadata and excluded from evaluation
 - Model, runtime version, reference count, token limit, and preset accompany results
+- Reference-set version and full SHA-256 accompany results; tests must recompute the fingerprint from the ordered English JSON array
+- Each candidate exposes the exact top-k reference indexes, sentences, raw cosine values, and display proximities used for B
 - Candidates over 256 word pieces show both used and original counts
 - Input and preset changes invalidate old results
 - Language changes redraw any current result without recomputing it
 - User-controlled content must not be assigned to `innerHTML`
+- Nearest-reference disclosures must remain explanatory only and must not imply correctness, naturalness, provenance, or confidence
 - Preserve 320–390px layouts without horizontal overflow and keep controls at least 44px high
 
 ## Network and Security

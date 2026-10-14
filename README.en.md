@@ -28,11 +28,11 @@ When the required files are not cached, the browser needs an internet connection
 
 > ![Japanese interface comparing three plaintext candidates](assets/screenshot.png)
 >
-> *Japanese interface showing the score components, input length, and execution conditions.*
+> *Japanese interface showing the reference-set version and fingerprint with the five references used for B expanded.*
 
 > ![English interface comparing three plaintext candidates](assets/screenshot-en.png)
 >
-> *The input and computed results remain available when the interface language changes.*
+> *The input, computed result, and disclosed reference neighborhood remain available across interface languages.*
 
 ---
 
@@ -42,6 +42,8 @@ When the required files are not cached, the browser needs an internet connection
 
 - Rank up to 200 English plaintext candidates by semantic similarity to the built-in references
 - Show proximity to the reference centroid and proximity to the nearest references separately from the composite score
+- Expand each candidate to inspect the reference sentences, collection indexes, and individual cosine values used for top-k proximity
+- Record a reference-set version and SHA-256 fingerprint with the result conditions
 - Display and copy metadata such as `shift=13` and `branch=B12` while excluding it from scoring
 - Count input length with the actual tokenizer and report candidates above 256 word pieces
 - Switch the complete interface between Japanese and English
@@ -61,7 +63,8 @@ When the required files are not cached, the browser needs an internet connection
 2. Enter one candidate per block and separate blocks with a blank line.
 3. Choose a comparison preset and select “Compare.”
 4. Inspect both proximity components, the input length, and any truncation notice rather than relying on rank alone.
-5. Review the leading candidates against the cipher method, key, and context.
+5. Expand “nearest references used” to inspect the sentences and individual cosine values that contributed to B.
+6. Review the leading candidates against the cipher method, key, and context.
 
 Changing the input or preset invalidates the displayed result. Changing the interface language redraws the same computed result without running the model again.
 
@@ -127,6 +130,8 @@ This is cosine similarity to the L2-normalized mean of all reference vectors. It
 
 This is the average cosine similarity to the k nearest reference sentences. It rises when a candidate resembles examples in the fixed collection and therefore depends on the contents of that collection.
 
+Each candidate can disclose the exact k sentences used in this average, in proximity order, with their collection indexes, raw cosine values, and 0-to-1 display proximities. Equal cosine values retain collection order. A nearby sentence does not prove that a candidate is correct plaintext or natural English.
+
 ### Composite
 
 ```text
@@ -157,11 +162,15 @@ A smaller k is not inherently “stricter,” and a larger k is not inherently �
 - Runtime: Transformers.js 3.5.2
 - Output: 384 dimensions with mean pooling and L2 normalization
 - Reference collection: 300 fixed English sentences stored in this repository
+- Reference-set version: `en-300-v1`
+- Reference-set SHA-256: `99438d5c1522c3c66cf5378ace2cc5382f632bdb95ef111fb83758a38a3a5e31`
 - Input limit: 256 word pieces per candidate, including special tokens
 
 The upstream [all-MiniLM-L6-v2 model card](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) describes the model as a sentence and short-paragraph encoder and states that input beyond 256 word pieces is truncated by default. This tool explicitly pins the runtime tokenizer to that limit.
 
-The UI records the model, runtime version, reference count, limit, and preset alongside each result. Input length is descriptive—not confidence—and is shown as short, medium, long, or over limit.
+The fingerprint is SHA-256 over the UTF-8 bytes of the 300 English sentences serialized as a JSON array in source order. A sentence or order change produces another fingerprint, but the value is not a third-party authenticity proof or signature.
+
+The UI records the model, runtime version, reference count, reference-set version and fingerprint, limit, and preset alongside each result. Input length is descriptive—not confidence—and is shown as short, medium, long, or over limit.
 
 ---
 
@@ -173,6 +182,7 @@ The UI records the model, runtime version, reference count, limit, and preset al
 - Short candidates can have small score differences.
 - Text beyond 256 word pieces is not compared.
 - Specialized terms, proper nouns, and styles absent from the references may be disadvantaged.
+- The disclosed neighbors explain B; they are not evidence of correctness, naturalness, or provenance.
 - A ranking should be read in the context of the supplied candidate set.
 
 Use the ranking to narrow hypotheses. Check the cipher method, key consistency, context, known plaintext, and other statistical evidence separately.
@@ -208,7 +218,7 @@ For sensitive candidates, verify that external resources are already available, 
 - **Prioritize Caesar brute-force output:** Keep `shift=N` metadata and decide which candidates to read first. The included screenshot shows comparison scores of 0.662, 0.640, and 0.622 for three sample candidates.
 - **Compare substitution branches:** Preserve `branch=B12` and `mapping=...` for traceability while scoring only the plaintext.
 - **Compare different solver outputs:** Place candidates from multiple decoders in separate blocks, then check whether the centroid and nearest-reference presets change their order.
-- **Study reference-set dependence:** Switch between the top-3 and top-7 presets to observe how k changes the composite score.
+- **Study reference-set dependence:** Switch between the top-3 and top-7 presets, inspect which sentences and cosine values contribute to B, and observe how k changes the composite score.
 - **Observe truncation:** Enter a candidate longer than 256 word pieces and compare its original length with the number actually used.
 
 ### General uses

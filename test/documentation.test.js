@@ -15,12 +15,21 @@ test('the fixed English reference collection contains exactly 300 non-empty sent
 
 test('Japanese and English READMEs agree on critical numeric contracts and links', async () => {
     const [ja, en] = await Promise.all([read('README.md'), read('README.en.md')]);
-    for (const expected of ['300', '256', '3.5.2', 'https://ipusiron.github.io/semantic-candidate-ranker/']) {
+    for (const expected of [
+        '300',
+        '256',
+        '3.5.2',
+        'en-300-v1',
+        '99438d5c1522c3c66cf5378ace2cc5382f632bdb95ef111fb83758a38a3a5e31',
+        'https://ipusiron.github.io/semantic-candidate-ranker/'
+    ]) {
         assert.ok(ja.includes(expected), `Japanese README lacks ${expected}`);
         assert.ok(en.includes(expected), `English README lacks ${expected}`);
     }
     assert.match(ja, /\[English README\]\(README\.en\.md\)/);
     assert.match(en, /\[日本語版README\]\(README\.md\)/);
+    assert.match(ja, /真正性の証明や署名ではありません/);
+    assert.match(en, /not a third-party authenticity proof or signature/);
 });
 
 test('documentation does not claim calibrated labels, confidence, or guaranteed offline use', async () => {

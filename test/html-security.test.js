@@ -28,4 +28,6 @@ test('UI does not assign innerHTML or use document.write/eval', async () => {
     assert.doesNotMatch(ui, /\.innerHTML\s*=/);
     assert.doesNotMatch(ui, /document\.write\s*\(/);
     assert.doesNotMatch(ui, /\beval\s*\(/);
+    assert.match(ui, /makeElement\('details', 'nearest-references'\)/);
+    assert.match(ui, /reference\.text \|\| ''/);
 });

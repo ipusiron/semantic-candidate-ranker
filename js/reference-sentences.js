@@ -1,9 +1,11 @@
 /**
- * Reference sentences for semantic similarity scoring
- * Supports Japanese and English
- * ~300 short sentences per language, mixed styles
- * Categories: dialogue, narrative, technical, miscellaneous
+ * Reference sentences for semantic similarity scoring.
+ * The ranker uses the English collection. Its fingerprint is SHA-256 over
+ * UTF-8 JSON.stringify(REFERENCE_SENTENCES.en), preserving source order.
  */
+
+export const REFERENCE_SET_VERSION = 'en-300-v1';
+export const REFERENCE_SET_FINGERPRINT = '99438d5c1522c3c66cf5378ace2cc5382f632bdb95ef111fb83758a38a3a5e31';
 
 export const REFERENCE_SENTENCES = {
     ja: [
@@ -625,6 +627,9 @@ export const REFERENCE_SENTENCES = {
         "the effort was worthwhile"
     ]
 };
+
+Object.values(REFERENCE_SENTENCES).forEach(sentences => Object.freeze(sentences));
+Object.freeze(REFERENCE_SENTENCES);
 
 /**
  * Get reference sentences for a specific language

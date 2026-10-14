@@ -133,6 +133,7 @@ try {
         scrollWidth: document.documentElement.scrollWidth,
         hasOverflow: document.documentElement.scrollWidth > innerWidth
     })`);
+    if (initial.hasOverflow) throw new Error('Initial 390px layout overflows horizontally');
 
     await evaluate(`(() => {
         const input = document.getElementById('candidateInput');
@@ -152,10 +153,36 @@ try {
         cards: document.querySelectorAll('.result-card').length,
         metrics: [...document.querySelectorAll('.result-card:first-child dd')].map(node => node.textContent),
         conditions: document.getElementById('resultContext').textContent,
+        referenceVersionPresent: document.getElementById('resultContext').textContent.includes('en-300-v1'),
+        referenceFingerprintPresent: document.getElementById('resultContext').textContent.includes('99438d5c1522c3c66cf5378ace2cc5382f632bdb95ef111fb83758a38a3a5e31'),
+        disclosureCount: document.querySelectorAll('.nearest-references').length,
         warning: document.getElementById('messages').textContent,
         hasOverflow: document.documentElement.scrollWidth > innerWidth
     })`);
     if (resultState.error) throw new Error(resultState.error);
+    if (!resultState.referenceVersionPresent || !resultState.referenceFingerprintPresent) {
+        throw new Error('Reference-set version or fingerprint is missing from result conditions');
+    }
+    if (resultState.disclosureCount !== 3) {
+        throw new Error(`Expected 3 nearest-reference disclosures, got ${resultState.disclosureCount}`);
+    }
+
+    await evaluate(`document.querySelector('.result-card .nearest-references summary').click()`);
+    await waitFor(`document.querySelectorAll('.result-card:first-child .nearest-reference-item').length > 0`);
+    const nearestReferences = await evaluate(`({
+        count: document.querySelectorAll('.result-card:first-child .nearest-reference-item').length,
+        firstIndex: document.querySelector('.result-card:first-child .nearest-reference-index')?.textContent || '',
+        firstMetrics: document.querySelector('.result-card:first-child .nearest-reference-metrics')?.textContent || '',
+        firstText: document.querySelector('.result-card:first-child .nearest-reference-text')?.textContent || '',
+        limitation: document.querySelector('.result-card:first-child .nearest-references-notice')?.textContent || '',
+        hasOverflow: document.documentElement.scrollWidth > innerWidth
+    })`);
+    if (nearestReferences.count !== 5 || !nearestReferences.firstIndex || !nearestReferences.firstText) {
+        throw new Error('Nearest-reference disclosure does not contain the expected five explained matches');
+    }
+    if (!nearestReferences.firstMetrics.includes('cosine') || nearestReferences.hasOverflow) {
+        throw new Error('Nearest-reference metrics are missing or overflow the viewport');
+    }
 
     await evaluate(`document.getElementById('langToggle').click()`);
     const english = await evaluate(`({
@@ -164,6 +191,12 @@ try {
         scoreNotice: document.getElementById('scoreNotice').textContent,
         resultPreserved: !document.getElementById('results').hidden
     })`);
+    if (english.lang !== 'en' || !english.resultPreserved) {
+        throw new Error('English redraw did not preserve the result');
+    }
+
+    await evaluate(`document.querySelector('.result-card .nearest-references summary').click()`);
+    await waitFor(`document.querySelectorAll('.result-card:first-child .nearest-reference-item').length > 0`);
 
     await command('Emulation.setDeviceMetricsOverride', {
         width: 1280,
@@ -173,6 +206,8 @@ try {
     });
     await screenshot('screenshot-en.png');
     await evaluate(`document.getElementById('langToggle').click()`);
+    await evaluate(`document.querySelector('.result-card .nearest-references summary').click()`);
+    await waitFor(`document.querySelectorAll('.result-card:first-child .nearest-reference-item').length > 0`);
     await screenshot('screenshot.png');
 
     await command('Emulation.setDeviceMetricsOverride', {
@@ -194,6 +229,9 @@ try {
         original: document.querySelector('.token-original')?.textContent || '',
         hasOverflow: document.documentElement.scrollWidth > innerWidth
     })`);
+    if (!truncation.original.includes('402') || truncation.hasOverflow) {
+        throw new Error('Tokenizer truncation disclosure is missing or overflows');
+    }
 
     const modal = await evaluate(`(async () => {
         document.getElementById('helpBtn').click();
@@ -207,6 +245,9 @@ try {
             focusReturned: document.activeElement?.id === 'helpBtn'
         };
     })()`);
+    if (!modal.opened || !modal.focusedOnClose || !modal.closed || !modal.focusReturned) {
+        throw new Error('Help dialog focus behavior failed');
+    }
 
     await evaluate(`(() => {
         globalThis.__semanticRankerXss = 0;
@@ -222,14 +263,23 @@ try {
         document.getElementById('runBtn').click();
     })()`);
     await waitFor(`!document.getElementById('results').hidden || document.getElementById('messages').classList.contains('error')`);
+    await evaluate(`document.querySelector('.result-card .nearest-references summary').click()`);
+    await waitFor(`document.querySelectorAll('.result-card:first-child .nearest-reference-item').length > 0`);
     const xssAndRemaining = await evaluate(`({
         executed: globalThis.__semanticRankerXss,
         injectedImages: document.querySelectorAll('#results img').length,
         remainingVisible: !document.getElementById('allResultsBlock').hidden,
         remainingCount: document.querySelectorAll('.result-item').length,
         toggleCount: document.querySelectorAll('.toggle-btn').length,
+        nearestCount: document.querySelectorAll('.result-card:first-child .nearest-reference-item').length,
         hasOverflow: document.documentElement.scrollWidth > innerWidth
     })`);
+    if (xssAndRemaining.executed !== 0 || xssAndRemaining.injectedImages !== 0) {
+        throw new Error('User-controlled HTML was interpreted as markup');
+    }
+    if (xssAndRemaining.nearestCount !== 5 || xssAndRemaining.hasOverflow) {
+        throw new Error('Explained result failed after hostile input');
+    }
 
     const responsive = [];
     for (const width of [320, 390, 600, 1280]) {
@@ -244,9 +294,9 @@ try {
             width: innerWidth,
             scrollWidth: document.documentElement.scrollWidth,
             overflow: document.documentElement.scrollWidth > innerWidth,
-            minimumButtonHeight: Math.min(...[...document.querySelectorAll('button')]
-                .filter(button => button.offsetParent !== null)
-                .map(button => button.getBoundingClientRect().height))
+            minimumButtonHeight: Math.min(...[...document.querySelectorAll('button, summary')]
+                .filter(control => control.offsetParent !== null)
+                .map(control => control.getBoundingClientRect().height))
         })`));
     }
 
@@ -255,10 +305,17 @@ try {
         if (event.method === 'Runtime.exceptionThrown') return true;
         return false;
     }).map(event => event.params.entry?.text || event.params.exceptionDetails?.text || event.method);
+    if (responsive.some(item => item.overflow || item.minimumButtonHeight < 44)) {
+        throw new Error('A responsive viewport overflowed or exposed a control shorter than 44px');
+    }
+    if (relevantErrors.length > 0) {
+        throw new Error(`Browser warnings or errors: ${relevantErrors.join(' | ')}`);
+    }
 
     console.log(JSON.stringify({
         initial,
         resultState,
+        nearestReferences,
         english,
         truncation,
         modal,
