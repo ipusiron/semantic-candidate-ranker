@@ -102,7 +102,7 @@ export function scoreCandidate(candidateEmb, centroid, refEmbeddings, preset) {
  * @param {Float32Array} centroid
  * @param {Array<number[]|Float32Array>} refEmbeddings
  * @param {{wA: number, wB: number, k: number}} preset
- * @returns {{score: number, centroidScore: number, referenceScore: number}}
+ * @returns {{score: number, centroidScore: number, referenceScore: number, nearestReferences: Array<{referenceIndex: number, cosineSimilarity: number, proximity: number}>}}
  */
 export function scoreCandidateDetails(candidateEmb, centroid, refEmbeddings, preset) {
     const { wA, wB, k } = preset;
@@ -117,17 +117,26 @@ export function scoreCandidateDetails(candidateEmb, centroid, refEmbeddings, pre
     const centroidSimilarity = cosineSimilarity(candidateEmb, centroid);
 
     // B) Reference proximity: average of top-k similarities
-    const similarities = refEmbeddings.map(ref => cosineSimilarity(candidateEmb, ref));
-    similarities.sort((a, b) => b - a); // Descending order
+    const similarities = refEmbeddings.map((ref, referenceIndex) => ({
+        referenceIndex,
+        cosineSimilarity: cosineSimilarity(candidateEmb, ref)
+    }));
+    similarities.sort((a, b) =>
+        (b.cosineSimilarity - a.cosineSimilarity) || (a.referenceIndex - b.referenceIndex)
+    );
     const topK = similarities.slice(0, Math.min(k, similarities.length));
-    const referenceSimilarity = topK.reduce((sum, s) => sum + s, 0) / topK.length;
+    const referenceSimilarity = topK.reduce((sum, item) => sum + item.cosineSimilarity, 0) / topK.length;
 
     const normalizeForDisplay = value => Math.max(0, Math.min(1, (value + 1) / 2));
     const centroidScore = normalizeForDisplay(centroidSimilarity);
     const referenceScore = normalizeForDisplay(referenceSimilarity);
     const score = Math.max(0, Math.min(1, wA * centroidScore + wB * referenceScore));
+    const nearestReferences = topK.map(item => ({
+        ...item,
+        proximity: normalizeForDisplay(item.cosineSimilarity)
+    }));
 
-    return { score, centroidScore, referenceScore };
+    return { score, centroidScore, referenceScore, nearestReferences };
 }
 
 /**
@@ -136,9 +145,13 @@ export function scoreCandidateDetails(candidateEmb, centroid, refEmbeddings, pre
  * @param {Float32Array} centroid - Reference centroid
  * @param {Array<number[]|Float32Array>} refEmbeddings - All reference embeddings
  * @param {Object} preset - Preset configuration
- * @returns {Array<{text: string, score: number, centroidScore: number, referenceScore: number, lengthBand: string, rank: number, meta?: Object, rawText?: string}>}
+ * @param {string[]|null} referenceTexts - Optional source text aligned to refEmbeddings
+ * @returns {Array<{text: string, score: number, centroidScore: number, referenceScore: number, nearestReferences: Array, lengthBand: string, rank: number, meta?: Object, rawText?: string}>}
  */
-export function rankCandidates(candidates, centroid, refEmbeddings, preset) {
+export function rankCandidates(candidates, centroid, refEmbeddings, preset, referenceTexts = null) {
+    if (referenceTexts !== null && referenceTexts.length !== refEmbeddings.length) {
+        throw new Error('Reference texts and embeddings must have the same length');
+    }
     const scored = candidates.map((c, originalIndex) => {
         const details = scoreCandidateDetails(c.embedding, centroid, refEmbeddings, preset);
         return {
@@ -150,7 +163,11 @@ export function rankCandidates(candidates, centroid, refEmbeddings, preset) {
             truncated: Boolean(c.truncated),
             lengthBand: getLengthBand(c.tokenCount, c.truncated),
             originalIndex,
-            ...details
+            ...details,
+            nearestReferences: details.nearestReferences.map(item => ({
+                ...item,
+                text: referenceTexts?.[item.referenceIndex] ?? null
+            }))
         };
     });
 

@@ -523,6 +523,12 @@ a:focus-visible {
     overflow-wrap: anywhere;
 }
 
+.reference-fingerprint {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.01em;
+}
+
 .score-notice {
     margin: 0 0 24px;
     padding: 12px 14px;
@@ -728,6 +734,100 @@ a:focus-visible {
     color: #166534;
 }
 
+.nearest-references {
+    margin: 0 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-secondary);
+    overflow: hidden;
+}
+
+.nearest-references summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 12px;
+    color: var(--color-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.nearest-references summary:hover {
+    background-color: var(--color-border);
+}
+
+.nearest-references summary:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.35);
+    outline-offset: -3px;
+}
+
+.nearest-references[open] summary {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.nearest-references-body {
+    padding: 12px;
+}
+
+.nearest-references-body:empty {
+    display: none;
+}
+
+.nearest-references-notice {
+    margin: 0 0 10px;
+    color: var(--color-text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.nearest-references-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nearest-reference-item {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-bg);
+}
+
+.nearest-reference-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin-bottom: 6px;
+}
+
+.nearest-reference-index {
+    color: var(--color-primary);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.nearest-reference-metrics {
+    color: var(--color-text-secondary);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+}
+
+.nearest-reference-text {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
 .all-results {
     display: flex;
     flex-direction: column;
@@ -805,6 +905,12 @@ a:focus-visible {
 .result-item > .length-details,
 .result-actions {
     grid-column: 2;
+}
+
+.result-item > .nearest-references {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-bottom: 0;
 }
 
 .result-actions {

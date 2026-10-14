@@ -14,8 +14,10 @@ test('language switch works without localStorage and interpolates all placeholde
     setLang('en');
     assert.equal(getCurrentLang(), 'en');
     assert.equal(t('wordPieceUsage', { used: 256, limit: 256 }), '256/256 word pieces used');
+    assert.equal(t('nearestReferencesSummary', { count: 5 }), 'Show the 5 nearest references used');
     setLang('ja');
     assert.equal(t('warningTruncated', { count: 2, limit: 256 }), '2件は256 word piecesを超えたため、超過部分を比較に使っていません。');
+    assert.equal(t('nearestReferenceIndex', { index: 42 }), '参照 #42');
 });
 
 test('unknown language is ignored and English fallback is available', () => {

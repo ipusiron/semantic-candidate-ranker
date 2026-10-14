@@ -14,7 +14,11 @@ import {
     MODEL_WORDPIECE_LIMIT,
     TRANSFORMERS_VERSION
 } from './embedder.js';
-import { getReferenceSentences } from './reference-sentences.js';
+import {
+    getReferenceSentences,
+    REFERENCE_SET_VERSION,
+    REFERENCE_SET_FINGERPRINT
+} from './reference-sentences.js';
 import {
     initUI,
     getInputValue,
@@ -143,7 +147,13 @@ async function handleRun() {
 
         // Stage 5: Rank results
         updateProgress(5);
-        const results = rankCandidates(candidatesWithEmbeddings, centroid, refEmbeddings, preset);
+        const results = rankCandidates(
+            candidatesWithEmbeddings,
+            centroid,
+            refEmbeddings,
+            preset,
+            referenceSentences
+        );
 
         // Display results
         renderResults(results, {
@@ -151,6 +161,8 @@ async function handleRun() {
             transformersVersion: TRANSFORMERS_VERSION,
             tokenLimit: MODEL_WORDPIECE_LIMIT,
             referenceCount: referenceSentences.length,
+            referenceVersion: REFERENCE_SET_VERSION,
+            referenceFingerprint: REFERENCE_SET_FINGERPRINT,
             presetName,
             topK: preset.k,
             truncatedCount

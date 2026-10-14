@@ -28,7 +28,7 @@
 
 ## Result State
 
-The result-context card displays model ID, runtime version, reference count, token limit, and preset. A warning immediately below states that the composite is not a probability, quality grade, or proof of decryption.
+The result-context card displays model ID, runtime version, reference count, reference-set version, full SHA-256 fingerprint, token limit, and preset. The 64-character fingerprint wraps without widening the page. A warning immediately below states that the composite is not a probability, quality grade, or proof of decryption.
 
 Top three cards show:
 
@@ -40,9 +40,12 @@ Top three cards show:
 - top-k reference-proximity component
 - descriptive input-length band and exact word-piece usage
 - original count when truncated
+- collapsed disclosure for the exact top-k references used by B
 - original-block copy button
 
-Remaining results use a compact layout with the same values, expandable text, and copy action. The remaining-results section is hidden when fewer than four candidates exist.
+The reference disclosure uses a native `details` element and is rendered lazily when opened. Each item shows its one-based collection index, exact sentence, raw cosine, and 0-to-1 display proximity. It also states that similarity is not evidence of correctness or naturalness.
+
+Remaining results use a compact layout with the same values, expandable text, reference disclosure, and copy action. The remaining-results section is hidden when fewer than four candidates exist.
 
 ## Bilingual Behavior
 
@@ -67,3 +70,4 @@ Remaining results use a compact layout with the same values, expandable text, an
 - Live regions for messages and result updates
 - Rank and length use text as well as color
 - Buttons are native keyboard-operable elements
+- Native reference disclosures work with keyboard and expose a 44px summary target

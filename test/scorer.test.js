@@ -39,6 +39,11 @@ test('scoreCandidateDetails exposes both normalized proximity components', () =>
     closeTo(details.centroidScore, 1);
     closeTo(details.referenceScore, 0.75);
     closeTo(details.score, 0.875);
+    assert.deepEqual(details.nearestReferences.map(item => item.referenceIndex), [0, 1]);
+    closeTo(details.nearestReferences[0].cosineSimilarity, 1);
+    closeTo(details.nearestReferences[0].proximity, 1);
+    closeTo(details.nearestReferences[1].cosineSimilarity, 0);
+    closeTo(details.nearestReferences[1].proximity, 0.5);
     closeTo(scoreCandidate(
         new Float32Array([1, 0]),
         new Float32Array([1, 0]),
@@ -58,11 +63,33 @@ test('rankCandidates preserves source order for ties and carries token metadata'
     const ranked = rankCandidates([
         { text: 'first', rawText: 'first', meta: {}, embedding: vector, tokenCount: 12, usedTokenCount: 12, truncated: false },
         { text: 'second', rawText: 'second', meta: {}, embedding: vector, tokenCount: 300, usedTokenCount: 256, truncated: true }
-    ], vector, [vector], PRESETS.balanced);
+    ], vector, [vector], PRESETS.balanced, ['the reference sentence']);
     assert.deepEqual(ranked.map(result => result.text), ['first', 'second']);
     assert.equal(ranked[0].lengthBand, 'short');
     assert.equal(ranked[1].lengthBand, 'truncated');
     assert.equal(ranked[1].usedTokenCount, 256);
+    assert.equal(ranked[0].nearestReferences[0].referenceIndex, 0);
+    assert.equal(ranked[0].nearestReferences[0].text, 'the reference sentence');
+    assert.throws(
+        () => rankCandidates([], vector, [vector], PRESETS.balanced, []),
+        /same length/
+    );
+});
+
+test('nearest-reference ties preserve source collection order', () => {
+    const candidate = new Float32Array([1, 0]);
+    const references = [
+        new Float32Array([0, 1]),
+        new Float32Array([1, 0]),
+        new Float32Array([1, 0])
+    ];
+    const details = scoreCandidateDetails(
+        candidate,
+        candidate,
+        references,
+        { wA: 0.5, wB: 0.5, k: 3 }
+    );
+    assert.deepEqual(details.nearestReferences.map(item => item.referenceIndex), [1, 2, 0]);
 });
 
 test('getLengthBand describes size rather than confidence', () => {
