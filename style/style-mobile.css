@@ -8,6 +8,10 @@
     font-size: 1.5rem;
 }
 
+.header-buttons {
+    justify-content: center;
+}
+
 .subtitle {
     font-size: 0.9rem;
 }
@@ -69,33 +73,13 @@
     font-size: 1rem;
 }
 
-.score-info {
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
 .result-item {
-    flex-wrap: wrap;
     padding: 10px;
 }
 
 .result-content {
-    order: 2;
-    width: 100%;
-    margin-top: 8px;
-}
-
-.result-rank {
-    order: 1;
-}
-
-.confidence-badge {
-    order: 1;
-}
-
-.toggle-btn {
-    order: 1;
-    margin-left: auto;
+    width: auto;
+    margin-top: 0;
 }
 
 .footer {

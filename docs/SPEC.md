@@ -1,167 +1,137 @@
-# Semantic Candidate Ranker - SPEC
+# Semantic Candidate Ranker - Functional Specification
 
 ## Purpose
-Rank plaintext candidates using semantic similarity (browser-side embedding).
-This tool does NOT decrypt or solve ciphers.
+
+Compare English plaintext candidates by semantic similarity to a fixed collection of 300 English references. The ranking is a review aid. It is not decryption, grammatical-naturalness assessment, quality grading, or probability estimation.
 
 ## Input
-- Multiple plaintext candidates
-- Candidates separated by blank lines
-- Line breaks inside a candidate are allowed
+
+- Up to 200 candidates
+- One candidate per block; blocks are separated by one or more blank lines
+- Line breaks inside a candidate are allowed and become spaces during normalization
+- Input and reference language: English
 
 ## Metadata Exclusion
 
-Supports candidate blocks with metadata lines in generic `key=value` format.
-Compatible with exports from various upstream tools (Caesar Cipher Breaker, Substitution Mapping Mixer, etc.).
+Consecutive `key=value` lines at the start of each block are metadata.
 
-### Recognized Metadata Lines
-A line is treated as metadata if:
-1. It appears at the **beginning of the block** (consecutive lines from the start)
-2. It matches the format (after trimming leading spaces):
-```
-<key>=<value>
-```
-Where:
-- `key`: one or more word characters (letters, digits, underscore)
-- `value`: everything after the first `=`
+- `key`: one or more ASCII word characters (`A-Z`, `a-z`, `0-9`, `_`)
+- `value`: all content after the first `=` with surrounding whitespace removed
+- The first value is kept when a key repeats
+- Metadata is shown and included in copy output but excluded from embedding
+- Once a normal text line is found, later `key=value` lines are plaintext
+- Empty and metadata-only blocks are discarded
 
-Examples: `shift=13`, `branch=ABC`, `mapping=XYZ`, `score=0.95`, `algorithm=caesar`
+Example:
 
-**Important**: Once a non-metadata line is encountered, all subsequent lines are treated as content (even if they match `key=value` format). This prevents false positives in plaintext containing `=` characters.
-
-### Exclusion Rule
-- Metadata lines are **excluded from semantic evaluation**
-- Only non-metadata lines are normalized and sent to embedding
-- This ensures rankings are based purely on plaintext content
-- Changing metadata values does not affect scores (same plaintext = same score)
-
-### Display and Copy Behavior
-- All metadata is displayed prominently in results
-- "Copy" action copies the **original block including metadata** for traceability
-- Scoring is based only on the evaluation text (metadata excluded)
-
-### Edge Cases
-- Blocks containing **only metadata** (no plaintext content) are discarded
-- Empty blocks are ignored
-- Blocks with zero metadata lines are processed normally
-
-### Example 1: Single Metadata
-Input block:
-```
-shift=13
-this is a secret message
+```text
+branch=B12
+mapping=Q->u
+dear friend i will meet you at the station
 ```
 
-Parsed as:
-- `meta`: `{ shift: "13" }`
-- `rawText`: `"shift=13\nthis is a secret message"`
-- `evalText`: `"this is a secret message"` (used for scoring)
-
-### Example 2: Multiple Metadata
-Input block:
-```
-branch=ABC
-mapping=QWERTYUIOPASDFGHJKLZXCVBNM
-score=0.85
-THIS IS A SECRET MESSAGE
-```
-
-Parsed as:
-- `meta`: `{ branch: "ABC", mapping: "QWERTYUIOPASDFGHJKLZXCVBNM", score: "0.85" }`
-- `rawText`: (original block)
-- `evalText`: `"this is a secret message"` (used for scoring)
-
-### Example 3: No Metadata
-Input block:
-```
-this is a plain candidate without metadata
-```
-
-Parsed as:
-- `meta`: `{}`
-- `rawText`: `"this is a plain candidate without metadata"`
-- `evalText`: `"this is a plain candidate without metadata"` (used for scoring)
+The evaluation text is `dear friend i will meet you at the station`; copy output preserves all three lines.
 
 ## Normalization
-- Lowercase
-- Line breaks -> spaces
-- Collapse multiple spaces
-- Trim leading/trailing spaces
-- Apostrophes preserved
+
+1. Lowercase
+2. Replace line breaks with spaces
+3. Collapse whitespace runs
+4. Trim surrounding whitespace
+5. Preserve apostrophes
 
 ## Language
 
-### UI Language
-- Japanese (default)
-- English
-- Switchable via toggle button
+- Japanese interface by default
+- Complete English interface
+- The selected language is stored when local storage is available
+- Interface language never changes the evaluation references or score
+- Existing results are redrawn, not recomputed, after a language change
 
-### Input/Evaluation Language
-- English only
-- Reference sentences are always English
-- UI language does not affect evaluation
+## Model Contract
+
+- Model ID: `Xenova/all-MiniLM-L6-v2`
+- Runtime: Transformers.js 3.5.2
+- Output: 384-dimensional, mean-pooled, L2-normalized vector
+- Maximum input: 256 word pieces per candidate, including special tokens
+- The runtime tokenizer is explicitly pinned to 256 to match the upstream model card
+- Exact pre-truncation token counts are obtained from the loaded tokenizer
 
 ## Scoring
-Two components:
-A) Naturalness: similarity to centroid of reference sentence embeddings
-B) Reference proximity: average similarity of top-k closest reference sentences
 
-Final score = wA * A + wB * B
+For normalized cosine similarities:
 
-### Presets
-- Balanced (default): wA=0.5, wB=0.5, k=5
-- Naturalness: wA=0.7, wB=0.3, k=5
-- Reference: wA=0.3, wB=0.7, k=5
-- Strict: wA=0.5, wB=0.5, k=3
-- Broad: wA=0.5, wB=0.5, k=7
+```text
+A = (cos(candidate, reference_centroid) + 1) / 2
+B = (average(top-k reference cosine similarities) + 1) / 2
+comparison_score = wA * A + wB * B
+```
 
-## Reference Sentences
-- Built-in
-- ~300 short English sentences
-- Mixed styles (dialogue, narrative, technical, misc)
-- Few proper nouns
+The UI displays A, B, and the composite. These are reference-proximity values, not probabilities or quality scores.
 
-## Evaluation Comments
-Based on score:
-- Excellent: >= 0.85
-- Good: 0.75 - 0.85
-- Fair: 0.65 - 0.75
-- Weak: 0.55 - 0.65
-- Poor: < 0.55
+| Preset ID | wA | wB | k |
+| --- | ---: | ---: | ---: |
+| `balanced` | 0.5 | 0.5 | 5 |
+| `centroid` | 0.7 | 0.3 | 5 |
+| `neighbors` | 0.3 | 0.7 | 5 |
+| `top3` | 0.5 | 0.5 | 3 |
+| `top7` | 0.5 | 0.5 | 7 |
 
-## Confidence Indicator
-- Low: <40 chars
-- Medium: 40-120 chars
-- High: >=120 chars
+Ties keep source order. Component and composite values are clamped to `[0, 1]` for float-rounding safety. The tool applies no qualitative score thresholds.
 
-## Limits
-- Max candidates: 200
+## Descriptive Input Length
 
-## Performance
-- Slow warning threshold: 20 seconds
-- Progress stages:
-  1. Model loading
-  2. Preparing candidates
-  3. Preparing references
-  4. Computing similarities
-  5. Ranking results
+The input-length label is descriptive and must not be called confidence.
 
-## Network Policy
-- First run: Download model (~23MB) from Hugging Face
-- Subsequent runs: Fully offline (model cached in IndexedDB)
-- No external API requests
-- No telemetry
-- Input data never sent externally
+| Band | Token count |
+| --- | ---: |
+| Short | 0–31 |
+| Medium | 32–128 |
+| Long | 129–256 |
+| Over limit | More than 256; only the first 256 are used |
+
+## Result Context
+
+Every result set includes:
+
+- model ID
+- Transformers.js version
+- reference sentence count
+- token limit
+- selected preset
+- truncation warning count, when nonzero
+
+Input or preset mutation invalidates the displayed result.
+
+## Processing and Cancellation
+
+1. Load runtime and model
+2. Parse candidates and inspect token usage
+3. Embed or retrieve cached reference embeddings and centroid
+4. Embed candidates
+5. Score, sort, and render
+
+The slow notice appears after 20 seconds. The current operation can be cancelled through `AbortController` checks between stages and batches.
+
+## Network and Privacy
+
+- Candidate text is processed in the browser and is not sent to an application API.
+- Runtime files may be fetched from jsDelivr and model files from Hugging Face.
+- Cached files may enable reuse, but subsequent offline availability is not guaranteed.
+- The offline indicator reflects `navigator.onLine`, not model readiness.
+- No telemetry is implemented.
 
 ## Security
-- Content Security Policy (CSP)
-- HTML escaping for XSS prevention
-- No external data transmission after initial model download
+
+- User-controlled values are rendered with DOM creation and `textContent`, never assigned to `innerHTML`.
+- CSP allows only the local application and required runtime/model hosts.
+- Dynamic imports do not support SRI; the package version is pinned and the CDN remains a trust dependency.
+- New-tab links use `noopener noreferrer`.
 
 ## Limitations
 
-### Model Sensitivity
-The embedding model (all-MiniLM-L6-v2) may produce similar scores for natural text and gibberish in some cases. Score differences can be small (e.g., 0.64 vs 0.65), so rankings should be interpreted as guidance rather than definitive answers.
-
-### Metadata Exclusion Trade-off
-Metadata lines are excluded from evaluation to ensure consistent scoring regardless of metadata values. However, this means the evaluation is based solely on plaintext content. In edge cases where score differences are marginal, results may differ from expectations.
+- The hand-built reference collection is not a validated sample of English.
+- There is no labeled benchmark or calibrated decision threshold.
+- Close scores do not establish that candidates are equally likely to be correct.
+- Terms and styles absent from the references may rank poorly.
+- Content beyond the token limit is not represented.

@@ -109,25 +109,19 @@ export function parseCandidates(input) {
  * Validate candidates and return warnings if any
  * @param {Array<{ meta: Object, rawText: string, evalText: string }>} candidates - Array of parsed candidates
  * @param {string} rawInput - Original input text
- * @returns {{valid: boolean, warnings: string[]}}
+ * @returns {{valid: boolean, warnings: Array<{code: string, params?: Object}>}}
  */
 export function validateCandidates(candidates, rawInput) {
     const warnings = [];
 
     if (candidates.length === 0) {
-        return { valid: false, warnings: ['Please enter at least one candidate.'] };
+        return { valid: false, warnings: [{ code: 'errorEmpty' }] };
     }
 
     // Check for truncation
     const rawBlocks = rawInput.split(/\n\s*\n/).filter(b => b.trim().length > 0);
     if (rawBlocks.length > 200) {
-        warnings.push(`Input contains ${rawBlocks.length} candidates. Only the first 200 will be processed.`);
-    }
-
-    // Check for very short candidates (using evalText for length check)
-    const shortCandidates = candidates.filter(c => c.evalText.length < 40);
-    if (shortCandidates.length > 0 && shortCandidates.length === candidates.length) {
-        warnings.push('All candidates are short (< 40 characters). Results may have lower confidence.');
+        warnings.push({ code: 'errorTooMany', params: { count: rawBlocks.length } });
     }
 
     return { valid: true, warnings };

@@ -1,79 +1,69 @@
-# Semantic Candidate Ranker - UI SPEC
+# Semantic Candidate Ranker - UI Specification
 
 ## Layout
-- Header with title, help button, language toggle
-- Input textarea (candidates)
-- Preset selector
-- Run/Cancel buttons
-- Progress indicator
-- Results area
-- Footer with GitHub link
 
-## Header
-- Title and subtitle
-- Help button (?) - opens help modal
-- Language toggle button (EN/JP)
+1. Header: help, language switch, title, subtitle, scope warning
+2. Input: English candidates, format hint, textarea
+3. Controls: comparison preset, compare/cancel buttons
+4. Status: errors, warnings, five processing stages
+5. Results: execution conditions, score limitation, top cards, remaining candidates
+6. Footer: GitHub link and browser-offline indicator
 
-## Input
-- Textarea
-- Placeholder explains blank-line-separated blocks
-- Placeholder examples always in English (regardless of UI language)
+## Responsive Rules
 
-## Controls
-- Preset dropdown (5 options)
-- Run button (primary)
-- Cancel button (shown during processing)
+- Mobile-first base layout from 320px
+- 600px breakpoint for wider controls and result grids
+- 900px breakpoint for three top-result columns
+- No horizontal overflow at 320px or 390px
+- Header controls occupy their own row and never overlap the title
+- Interactive controls provide a minimum 44px tap target
+- Long metadata and repository text wrap instead of widening the page
 
-## Progress UI
-- Step-based indicator (5 steps)
-- Visual states: pending, active (pulsing), completed (checkmark)
-- Slow warning message (after 20 seconds)
+## Input State
 
-## Results
+- Textarea and preset remain editable while idle
+- Compare starts processing; Cancel replaces Compare during processing
+- Input, preset, and language controls are disabled while processing
+- Input or preset changes hide stale results and messages
 
-### Top Results (Top 3)
-- Large cards with rank badge
-- Candidate text
-- Evaluation comment (Excellent/Good/Fair/Weak/Poor)
-- Score value
-- Confidence badge (High/Medium/Low)
-- Copy button
+## Result State
 
-### All Results (Remaining)
-- Compact list items
-- Rank number
-- Truncated preview (expandable)
-- Score bar (relative width)
-- Confidence badge
-- Toggle button (Show/Hide full text)
+The result-context card displays model ID, runtime version, reference count, token limit, and preset. A warning immediately below states that the composite is not a probability, quality grade, or proof of decryption.
 
-## Messages
-- Error: empty input, processing errors
-- Warning: short candidates, too many candidates
-- Info: cancelled processing
+Top three cards show:
 
-## Help Modal
-- Triggered by "?" button
-- Backdrop click or Escape key to close
-- Content sections:
-  - Overview
-  - Usage steps
-  - Presets explanation
-  - Evaluation levels
-  - Limitations
+- rank
+- metadata labels
+- normalized candidate text
+- comparison score
+- centroid-proximity component
+- top-k reference-proximity component
+- descriptive input-length band and exact word-piece usage
+- original count when truncated
+- original-block copy button
 
-## Footer
-- GitHub repository link
-- Offline indicator (shown when network unavailable)
+Remaining results use a compact layout with the same values, expandable text, and copy action. The remaining-results section is hidden when fewer than four candidates exist.
 
-## Responsive Design
-- Mobile-first approach
-- Breakpoints:
-  - Mobile: < 600px (single column)
-  - Tablet: 600px+ (wider controls)
-  - Desktop: 900px+ (multi-column results)
+## Bilingual Behavior
+
+- All visible strings, dynamic values, button labels, document title, `html lang`, description, and ARIA labels switch together.
+- Current input and results are preserved.
+- Current warnings are retranslated from message keys.
+- The model and references do not reload because evaluation language is always English.
+
+## Help Dialog
+
+- Opens from the `?` button
+- Uses `role="dialog"`, `aria-modal="true"`, and a labelled heading
+- Explains what the tool compares, each metric, presets, network behavior, token limit, and judgement limits
+- Escape, backdrop, and close button dismiss it
+- Focus moves to Close and returns to the invoking control
 
 ## Accessibility
-- ARIA labels on buttons
-- Keyboard navigation (Tab, Escape for modal)
-- Focus management
+
+- Logical heading order
+- Native labels for textarea and select
+- Visible `:focus-visible` indicator
+- Live regions for messages and result updates
+- Rank and length use text as well as color
+- Buttons are native keyboard-operable elements
